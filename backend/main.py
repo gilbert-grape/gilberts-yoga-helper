@@ -1,9 +1,15 @@
 """
 Gebrauchtwaffen Aggregator - Main FastAPI Application
 """
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+# Get project root directory (one level up from backend/)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 app = FastAPI(
     title="Gebrauchtwaffen Aggregator",
@@ -11,11 +17,11 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="frontend/public"), name="static")
+# Mount static files with absolute path
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "public")), name="static")
 
-# Templates
-templates = Jinja2Templates(directory="frontend/templates")
+# Templates with absolute path
+templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
 
 @app.get("/")

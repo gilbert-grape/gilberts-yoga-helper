@@ -49,8 +49,7 @@ logs/*.log.*
 htmlcov/
 .pytest_cache/
 
-# Poetry
-poetry.lock
+# Poetry - Note: poetry.lock SHOULD be committed for reproducible builds
 
 # OS
 .DS_Store
