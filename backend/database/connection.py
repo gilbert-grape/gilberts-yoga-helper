@@ -6,11 +6,14 @@ This module sets up the SQLAlchemy engine with:
 - WAL (Write-Ahead Logging) mode for better concurrency
 - check_same_thread=False for FastAPI async compatibility
 """
+import logging
 from pathlib import Path
-from typing import Generator
+from typing import Any, Generator
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker, declarative_base
+
+logger = logging.getLogger(__name__)
 
 # Get project root (connection.py is in backend/database/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -31,11 +34,19 @@ engine = create_engine(
 
 
 @event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
     """Enable WAL mode on every SQLite connection for better concurrency."""
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
+    result = cursor.fetchone()
     cursor.close()
+
+    # Verify WAL mode was set correctly
+    if result and result[0] != "wal":
+        logger.warning(
+            f"Failed to enable WAL mode. Got '{result[0]}' instead of 'wal'. "
+            "Database may have reduced concurrency."
+        )
 
 
 # Session factory

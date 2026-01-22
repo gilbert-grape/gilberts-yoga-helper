@@ -1,10 +1,17 @@
 """
 Pytest configuration and fixtures for Gebrauchtwaffen Aggregator tests.
 """
+import os
+import tempfile
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import sessionmaker
 
 from backend.main import app
+from backend.database.connection import Base
 
 
 @pytest.fixture
@@ -12,3 +19,71 @@ def client():
     """Create a test client for the FastAPI application."""
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def test_db():
+    """
+    Create an isolated test database for tests that need database isolation.
+
+    This fixture creates a temporary SQLite database with WAL mode enabled,
+    creates all tables, and cleans up after the test.
+
+    Usage:
+        def test_something(test_db):
+            session = test_db()
+            # ... use session
+            session.close()
+    """
+    # Create temporary database file
+    fd, db_path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+
+    # Create test engine with same settings as production
+    test_engine = create_engine(
+        f"sqlite:///{db_path}",
+        connect_args={"check_same_thread": False},
+        echo=False,
+    )
+
+    # Enable WAL mode
+    @event.listens_for(test_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.close()
+
+    # Create all tables
+    Base.metadata.create_all(bind=test_engine)
+
+    # Create session factory
+    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+    yield TestSessionLocal
+
+    # Cleanup
+    test_engine.dispose()
+    # Remove temporary database files
+    db_path_obj = Path(db_path)
+    for suffix in ["", "-wal", "-shm"]:
+        file_path = Path(str(db_path) + suffix)
+        if file_path.exists():
+            file_path.unlink()
+
+
+@pytest.fixture
+def test_session(test_db):
+    """
+    Provide a database session for tests, with automatic cleanup.
+
+    Usage:
+        def test_something(test_session):
+            # test_session is already a Session instance
+            test_session.execute(...)
+    """
+    session = test_db()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()

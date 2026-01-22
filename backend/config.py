@@ -10,8 +10,8 @@ load_dotenv()
 class Settings:
     """Application settings."""
 
-    # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///data/gebrauchtwaffen.db")
+    # Note: Database configuration is handled in backend/database/connection.py
+    # with absolute paths for reliability. Do not add DATABASE_URL here.
 
     # Application
     APP_NAME: str = "Gebrauchtwaffen Aggregator"
