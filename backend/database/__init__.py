@@ -1,5 +1,5 @@
 """
-Database module - SQLite with WAL mode configuration.
+Database module - SQLite with WAL mode configuration and ORM models.
 """
 from backend.database.connection import (
     Base,
@@ -10,8 +10,15 @@ from backend.database.connection import (
     DATABASE_PATH,
     DATABASE_URL,
 )
+from backend.database.models import (
+    Match,
+    SearchTerm,
+    Source,
+    TimestampMixin,
+)
 
 __all__ = [
+    # Connection
     "Base",
     "SessionLocal",
     "engine",
@@ -19,4 +26,9 @@ __all__ = [
     "init_db",
     "DATABASE_PATH",
     "DATABASE_URL",
+    # Models
+    "Match",
+    "SearchTerm",
+    "Source",
+    "TimestampMixin",
 ]
