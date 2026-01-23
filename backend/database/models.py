@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
@@ -62,6 +63,12 @@ class SearchTerm(TimestampMixin, Base):
     """
 
     __tablename__ = "search_terms"
+    __table_args__ = (
+        CheckConstraint(
+            "match_type IN ('exact', 'similar')",
+            name="check_match_type_valid",
+        ),
+    )
 
     term = Column(String(255), nullable=False, unique=True, index=True)
     match_type = Column(
@@ -141,4 +148,5 @@ class Match(TimestampMixin, Base):
     search_term = relationship("SearchTerm", back_populates="matches")
 
     def __repr__(self) -> str:
-        return f"<Match(id={self.id}, title='{self.title[:30]}...', source_id={self.source_id})>"
+        title_display = self.title[:30] + "..." if len(self.title) > 30 else self.title
+        return f"<Match(id={self.id}, title='{title_display}', source_id={self.source_id})>"

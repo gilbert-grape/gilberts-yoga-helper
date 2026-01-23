@@ -8,8 +8,9 @@ Tests verify:
 - Foreign key columns follow <singular>_id pattern
 - Relationships work correctly
 """
+import time
+
 import pytest
-from datetime import datetime
 from sqlalchemy import inspect
 
 from backend.database.models import SearchTerm, Source, Match, TimestampMixin
@@ -85,6 +86,44 @@ class TestSearchTermModel:
 
         test_session.add(term2)
         with pytest.raises(Exception):  # IntegrityError
+            test_session.commit()
+
+    def test_updated_at_changes_on_modification(self, test_session):
+        """updated_at should change when record is modified."""
+        search_term = SearchTerm(term="Update Test")
+        test_session.add(search_term)
+        test_session.commit()
+
+        original_updated_at = search_term.updated_at
+
+        # Wait a tiny bit to ensure timestamp difference
+        time.sleep(0.01)
+
+        # Modify the record
+        search_term.match_type = "similar"
+        test_session.commit()
+
+        # Refresh to get the updated value from DB
+        test_session.refresh(search_term)
+
+        assert search_term.updated_at > original_updated_at
+
+    def test_match_type_constraint(self, test_session):
+        """match_type should only allow 'exact' or 'similar'."""
+        # Valid values should work
+        term_exact = SearchTerm(term="Valid Exact", match_type="exact")
+        term_similar = SearchTerm(term="Valid Similar", match_type="similar")
+        test_session.add(term_exact)
+        test_session.add(term_similar)
+        test_session.commit()
+
+        assert term_exact.match_type == "exact"
+        assert term_similar.match_type == "similar"
+
+        # Invalid value should fail
+        term_invalid = SearchTerm(term="Invalid Type", match_type="invalid")
+        test_session.add(term_invalid)
+        with pytest.raises(Exception):  # IntegrityError from CheckConstraint
             test_session.commit()
 
 
