@@ -25,9 +25,39 @@ Personal web aggregator for Swiss used firearms marketplaces. Monitors multiple 
 ### Prerequisites
 
 - Python 3.11 or 3.12
-- Poetry (`pip install poetry` or `curl -sSL https://install.python-poetry.org | python3 -`)
+- Poetry (dependency manager)
+
+**Install Poetry:**
+
+- **Windows (PowerShell):**
+  ```powershell
+  (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+  ```
+  Then add `%APPDATA%\Python\Scripts` to your PATH.
+
+- **Linux/macOS:**
+  ```bash
+  curl -sSL https://install.python-poetry.org | python3 -
+  ```
 
 ### Installation
+
+#### Windows (PowerShell or Command Prompt)
+
+```powershell
+# Clone the repository
+git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git
+cd gilberts-gun-crawler
+
+# Install dependencies
+poetry install
+
+# Create required directories
+mkdir data
+mkdir logs
+```
+
+#### Linux/macOS
 
 ```bash
 # Clone the repository
@@ -44,7 +74,6 @@ mkdir -p data logs
 ### Initialize Database
 
 ```bash
-# Run database migrations
 poetry run alembic upgrade head
 ```
 
@@ -56,6 +85,12 @@ poetry run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Production mode
 poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+**Windows note:** If `poetry run` doesn't work, activate the virtual environment first:
+```powershell
+poetry shell
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Open your browser to **http://localhost:8000**
