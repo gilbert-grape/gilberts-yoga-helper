@@ -1,0 +1,184 @@
+{# Crawl Status Partial - used for HTMX updates #}
+
+{# Success/Error Messages #}
+{% if error %}
+<div class="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+    <div class="flex">
+        <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="ml-3 text-sm text-red-700">{{ error }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if success %}
+<div class="mb-4 p-4 rounded-md bg-green-50 border border-green-200">
+    <div class="flex">
+        <svg class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <p class="ml-3 text-sm text-green-700">{{ success }}</p>
+    </div>
+</div>
+{% endif %}
+
+{# Current Status Card #}
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">Aktueller Status</h2>
+            {% if is_running %}
+                <div class="flex items-center mt-2">
+                    <svg class="animate-spin h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-blue-600 font-medium">Crawl läuft...</span>
+                    {% if current_source %}
+                        <span class="ml-2 text-gray-500">({{ current_source }})</span>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="flex items-center mt-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 8 8">
+                            <circle cx="4" cy="4" r="3" />
+                        </svg>
+                        Bereit
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Crawl Button #}
+        <div>
+            {% if is_running %}
+                <button
+                    disabled
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
+                >
+                    <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Läuft...
+                </button>
+                {# Poll for status updates while running #}
+                <div hx-get="/admin/crawl/status" hx-trigger="every 2s" hx-target="#crawl-status" hx-swap="innerHTML"></div>
+            {% else %}
+                <button
+                    hx-post="/admin/crawl/start"
+                    hx-target="#crawl-status"
+                    hx-swap="innerHTML"
+                    hx-indicator="#crawl-indicator"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Jetzt crawlen
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Last Crawl Result Card #}
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Letzter Crawl</h2>
+
+    {% if last_result %}
+        {# Status Badge #}
+        <div class="mb-4">
+            {% if last_result.is_success %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {{ last_result.status_text }}
+                </span>
+            {% elif last_result.is_partial_success %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                    <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {{ last_result.status_text }}
+                </span>
+            {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    {{ last_result.status_text }}
+                </span>
+            {% endif %}
+        </div>
+
+        {# Statistics Grid #}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Quellen versucht</dt>
+                <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ last_result.sources_attempted }}</dd>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Erfolgreich</dt>
+                <dd class="mt-1 text-2xl font-semibold text-green-600">{{ last_result.sources_succeeded }}</dd>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Fehlgeschlagen</dt>
+                <dd class="mt-1 text-2xl font-semibold {% if last_result.sources_failed > 0 %}text-red-600{% else %}text-gray-900{% endif %}">{{ last_result.sources_failed }}</dd>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Listings gefunden</dt>
+                <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ last_result.total_listings }}</dd>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Neue Treffer</dt>
+                <dd class="mt-1 text-2xl font-semibold text-blue-600">{{ last_result.new_matches }}</dd>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Duplikate übersprungen</dt>
+                <dd class="mt-1 text-2xl font-semibold text-gray-500">{{ last_result.duplicate_matches }}</dd>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <dt class="text-sm font-medium text-gray-500">Dauer</dt>
+                <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ "%.1f"|format(last_result.duration_seconds) }}s</dd>
+            </div>
+        </div>
+
+        {# Timestamp #}
+        {% if last_result.completed_at %}
+            <p class="text-sm text-gray-500">
+                Abgeschlossen: {{ last_result.completed_at.strftime('%d.%m.%Y %H:%M:%S') }} Uhr
+            </p>
+        {% endif %}
+
+        {# Failed Sources #}
+        {% if last_result.failed_sources %}
+            <div class="mt-4 p-3 bg-red-50 rounded-lg">
+                <h3 class="text-sm font-medium text-red-800 mb-2">Fehlgeschlagene Quellen:</h3>
+                <ul class="list-disc list-inside text-sm text-red-700">
+                    {% for source in last_result.failed_sources %}
+                        <li>{{ source }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+    {% else %}
+        {# No Previous Crawl #}
+        <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Kein Crawl durchgeführt</h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Klicken Sie auf "Jetzt crawlen", um den ersten Crawl zu starten.
+            </p>
+        </div>
+    {% endif %}
+</div>

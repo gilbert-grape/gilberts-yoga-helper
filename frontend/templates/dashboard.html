@@ -1,22 +1,79 @@
 {% extends "_base.html" %}
 
 {% block content %}
+{# Header with stats #}
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-    <p class="text-gray-600">Willkommen beim Gebrauchtwaffen Aggregator</p>
-</div>
-
-<div class="bg-white rounded-lg shadow p-6">
-    <div class="text-center py-8">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">Keine Treffer</h3>
-        <p class="mt-1 text-sm text-gray-500">Starten Sie einen Crawl, um Treffer zu finden.</p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-600">
+                {% if total_count > 0 %}
+                    {{ total_count }} Treffer gefunden
+                    {% if new_count > 0 %}
+                        <span class="inline-flex items-center ml-2 bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded">
+                            {{ new_count }} neue
+                        </span>
+                    {% endif %}
+                {% else %}
+                    Willkommen beim Gebrauchtwaffen Aggregator
+                {% endif %}
+            </p>
+        </div>
     </div>
 </div>
 
-<div class="mt-4 text-sm text-gray-500">
-    <p>Server Status: OK</p>
-</div>
+{% if groups and groups|length > 0 %}
+    {# Accordion container for grouped matches #}
+    <div id="matches-accordion" data-accordion="collapse" data-active-classes="bg-gray-50" data-inactive-classes="bg-white">
+        {% for group in groups %}
+            {% include "_partials/_match_group.html" %}
+        {% endfor %}
+    </div>
+{% else %}
+    {# Empty State - no search terms configured #}
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Keine Suchbegriffe</h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Konfigurieren Sie Suchbegriffe, um Treffer zu finden.
+            </p>
+            <div class="mt-6">
+                <a href="/admin/search-terms" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Suchbegriffe verwalten
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize accordion collapse/expand functionality
+    document.querySelectorAll('[data-accordion-target]').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.getAttribute('data-accordion-target');
+            const target = document.querySelector(targetId);
+            const icon = button.querySelector('[data-accordion-icon]');
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            // Toggle visibility
+            if (isExpanded) {
+                target.classList.add('hidden');
+                button.setAttribute('aria-expanded', 'false');
+                icon.classList.remove('rotate-180');
+            } else {
+                target.classList.remove('hidden');
+                button.setAttribute('aria-expanded', 'true');
+                icon.classList.add('rotate-180');
+            }
+        });
+    });
+</script>
 {% endblock %}

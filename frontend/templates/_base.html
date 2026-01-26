@@ -27,9 +27,15 @@
                 <a href="/" class="text-gray-700 hover:text-blue-600">Dashboard</a>
                 <a href="/admin/search-terms" class="text-gray-700 hover:text-blue-600">Suchbegriffe</a>
                 <a href="/admin/sources" class="text-gray-700 hover:text-blue-600">Quellen</a>
+                <a href="/admin/crawl" class="text-gray-700 hover:text-blue-600">Crawl</a>
             </div>
         </div>
     </nav>
+
+    <!-- Flash Messages -->
+    {% block messages %}
+    {% include "_partials/_flash_messages.html" ignore missing %}
+    {% endblock %}
 
     <!-- Main Content -->
     <main class="max-w-screen-xl mx-auto p-4">

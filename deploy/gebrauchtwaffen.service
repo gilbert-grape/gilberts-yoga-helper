@@ -1,0 +1,57 @@
+# Systemd service file for Gebrauchtwaffen Aggregator
+#
+# Installation:
+#   sudo cp deploy/gebrauchtwaffen.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable gebrauchtwaffen
+#   sudo systemctl start gebrauchtwaffen
+#
+# Management:
+#   sudo systemctl status gebrauchtwaffen
+#   sudo systemctl stop gebrauchtwaffen
+#   sudo systemctl restart gebrauchtwaffen
+#   sudo journalctl -u gebrauchtwaffen -f
+#
+# Configuration:
+#   Adjust User, WorkingDirectory, and ExecStart paths as needed
+
+[Unit]
+Description=Gebrauchtwaffen Aggregator - Swiss Used Firearms Marketplace Monitor
+Documentation=https://github.com/your-repo/gebrauchtwaffen-aggregator
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/gebrauchtwaffen_aggregator
+
+# Application startup
+ExecStart=/home/pi/gebrauchtwaffen_aggregator/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+# Restart configuration
+Restart=always
+RestartSec=10
+
+# Stop gracefully
+TimeoutStopSec=30
+KillMode=mixed
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+Environment=LOG_LEVEL=INFO
+Environment=USE_JOURNALD=true
+
+# Security hardening (optional, adjust as needed)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/pi/gebrauchtwaffen_aggregator/data
+ReadWritePaths=/home/pi/gebrauchtwaffen_aggregator/logs
+
+# Resource limits (adjust for Pi)
+MemoryMax=512M
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

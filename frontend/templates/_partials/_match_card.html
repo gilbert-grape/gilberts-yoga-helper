@@ -1,0 +1,53 @@
+{# Match Card Partial - displays a single match listing #}
+<div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow">
+    {# Image #}
+    <div class="aspect-video bg-gray-200 relative">
+        {% if match.image_url %}
+        <img
+            src="{{ match.image_url }}"
+            alt="{{ match.title }}"
+            class="w-full h-full object-cover"
+            loading="lazy"
+            onerror="this.onerror=null; this.src=''; this.parentElement.classList.add('flex', 'items-center', 'justify-center'); this.outerHTML='<svg class=\'h-12 w-12 text-gray-400\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\' /></svg>';"
+        >
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center">
+            <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+        </div>
+        {% endif %}
+
+        {# New Badge - will be styled in Story 3.3 #}
+        {% if match.is_new %}
+        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
+            NEU
+        </span>
+        {% endif %}
+    </div>
+
+    {# Content #}
+    <div class="p-4">
+        {# Title - clickable link to source #}
+        <h3 class="font-semibold text-gray-900 mb-1 line-clamp-2">
+            <a href="{{ match.url }}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600">
+                {{ match.title }}
+            </a>
+        </h3>
+
+        {# Price #}
+        <p class="text-lg font-bold text-gray-900 mb-2">
+            {% if match.price %}
+                CHF {{ match.price }}
+            {% else %}
+                <span class="text-gray-500 font-normal">Preis auf Anfrage</span>
+            {% endif %}
+        </p>
+
+        {# Source and Search Term #}
+        <div class="flex items-center justify-between text-sm text-gray-500">
+            <span>{{ match.source.name }}</span>
+            <span class="bg-gray-100 px-2 py-0.5 rounded text-xs">{{ match.search_term.term }}</span>
+        </div>
+    </div>
+</div>

@@ -11,10 +11,45 @@ from backend.database.connection import (
     DATABASE_URL,
 )
 from backend.database.models import (
+    AppSettings,
     Match,
     SearchTerm,
     Source,
     TimestampMixin,
+)
+from backend.database.crud import (
+    # Source operations
+    get_source_by_name,
+    get_source_by_id,
+    get_or_create_source,
+    get_all_sources,
+    get_all_sources_sorted,
+    get_active_sources,
+    toggle_source_active,
+    update_source_last_crawl,
+    clear_source_error,
+    # Search term operations
+    get_active_search_terms,
+    get_all_search_terms,
+    get_all_search_terms_sorted,
+    get_search_term_by_id,
+    get_search_term_by_term,
+    search_term_to_dict,
+    create_search_term,
+    delete_search_term,
+    update_search_term_match_type,
+    # Match operations
+    get_match_by_url_and_term,
+    save_match,
+    save_matches,
+    get_matches_by_search_term,
+    get_all_matches,
+    get_new_matches,
+    # App settings & new match detection
+    get_app_settings,
+    mark_matches_as_seen,
+    get_last_seen_at,
+    get_new_match_count,
 )
 
 __all__ = [
@@ -27,8 +62,41 @@ __all__ = [
     "DATABASE_PATH",
     "DATABASE_URL",
     # Models
+    "AppSettings",
     "Match",
     "SearchTerm",
     "Source",
     "TimestampMixin",
+    # CRUD - Sources
+    "get_source_by_name",
+    "get_source_by_id",
+    "get_or_create_source",
+    "get_all_sources",
+    "get_all_sources_sorted",
+    "get_active_sources",
+    "toggle_source_active",
+    "update_source_last_crawl",
+    "clear_source_error",
+    # CRUD - Search Terms
+    "get_active_search_terms",
+    "get_all_search_terms",
+    "get_all_search_terms_sorted",
+    "get_search_term_by_id",
+    "get_search_term_by_term",
+    "search_term_to_dict",
+    "create_search_term",
+    "delete_search_term",
+    "update_search_term_match_type",
+    # CRUD - Matches
+    "get_match_by_url_and_term",
+    "save_match",
+    "save_matches",
+    "get_matches_by_search_term",
+    "get_all_matches",
+    "get_new_matches",
+    # CRUD - App Settings & New Match Detection
+    "get_app_settings",
+    "mark_matches_as_seen",
+    "get_last_seen_at",
+    "get_new_match_count",
 ]

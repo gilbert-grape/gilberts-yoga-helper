@@ -13,6 +13,9 @@ from typing import Any, Generator
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker, declarative_base
 
+# Use standard logging.getLogger here instead of backend.utils.logging
+# to avoid circular imports (backend.__init__ -> backend.utils.logging -> backend.config)
+# Logging will still work correctly once setup_logging() has been called
 logger = logging.getLogger(__name__)
 
 # Get project root (connection.py is in backend/database/)
@@ -76,7 +79,7 @@ def init_db() -> None:
     """
     Initialize database by creating all tables.
 
-    Call this on application startup to ensure tables exist.
-    Note: In Story 1.4, this will be replaced by Alembic migrations.
+    DEPRECATED: This function is kept for backwards compatibility only.
+    Use Alembic migrations instead: `alembic upgrade head`
     """
     Base.metadata.create_all(bind=engine)

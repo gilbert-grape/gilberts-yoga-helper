@@ -1,0 +1,113 @@
+{# Single Source Row Partial - used for HTMX row updates #}
+<tr id="source-row-{{ source.id }}">
+    {# Source Name and URL #}
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex flex-col">
+            <div class="text-sm font-medium text-gray-900">{{ source.name }}</div>
+            <div class="text-xs text-gray-500">{{ source.base_url }}</div>
+        </div>
+    </td>
+
+    {# Active Status Badge #}
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if source.is_active %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                </svg>
+                Aktiv
+            </span>
+        {% else %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                </svg>
+                Inaktiv
+            </span>
+        {% endif %}
+    </td>
+
+    {# Last Crawl Timestamp #}
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if source.last_crawl_at %}
+            <div class="text-sm text-gray-900">
+                {{ source.last_crawl_at.strftime('%d.%m.%Y') }}
+            </div>
+            <div class="text-xs text-gray-500">
+                {{ source.last_crawl_at.strftime('%H:%M') }} Uhr
+            </div>
+        {% else %}
+            <span class="text-sm text-gray-500">Nie</span>
+        {% endif %}
+    </td>
+
+    {# Error Status #}
+    <td class="px-6 py-4">
+        {% if source.last_error %}
+            <div class="flex items-start gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 shrink-0">
+                    <svg class="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Fehler
+                </span>
+                <span class="text-xs text-gray-600 max-w-xs truncate" title="{{ source.last_error }}">
+                    {{ source.last_error[:50] }}{% if source.last_error|length > 50 %}...{% endif %}
+                </span>
+            </div>
+        {% else %}
+            {% if source.last_crawl_at %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                    <svg class="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    OK
+                </span>
+            {% else %}
+                <span class="text-sm text-gray-400">-</span>
+            {% endif %}
+        {% endif %}
+    </td>
+
+    {# Actions #}
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div class="flex items-center justify-end gap-2">
+            {# Toggle Active Button #}
+            <button
+                hx-patch="/admin/sources/{{ source.id }}/toggle"
+                hx-target="#source-row-{{ source.id }}"
+                hx-swap="outerHTML"
+                class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                title="{% if source.is_active %}Deaktivieren{% else %}Aktivieren{% endif %}"
+            >
+                {% if source.is_active %}
+                    <svg class="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    Deaktivieren
+                {% else %}
+                    <svg class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Aktivieren
+                {% endif %}
+            </button>
+
+            {# Clear Error Button (only shown if error exists) #}
+            {% if source.last_error %}
+                <button
+                    hx-delete="/admin/sources/{{ source.id }}/error"
+                    hx-target="#source-row-{{ source.id }}"
+                    hx-swap="outerHTML"
+                    class="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    title="Fehler zurücksetzen"
+                >
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Zurücksetzen
+                </button>
+            {% endif %}
+        </div>
+    </td>
+</tr>

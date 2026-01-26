@@ -1,0 +1,21 @@
+Generic single-database configuration for Alembic migrations.
+
+Gebrauchtwaffen Aggregator uses SQLite with WAL mode.
+
+Usage:
+    # Generate a new migration after model changes
+    alembic revision --autogenerate -m "description"
+
+    # Apply all pending migrations
+    alembic upgrade head
+
+    # Downgrade one revision
+    alembic downgrade -1
+
+    # Show current revision
+    alembic current
+
+    # Show migration history
+    alembic history
+
+Note: This project uses render_as_batch=True for SQLite compatibility.

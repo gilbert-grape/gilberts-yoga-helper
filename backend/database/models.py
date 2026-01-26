@@ -5,6 +5,7 @@ Models:
 - SearchTerm: User's search terms with match type (exact/similar)
 - Source: Scraper source websites
 - Match: Found listings matching search terms
+- AppSettings: Application-wide settings (last_seen_at for new match detection)
 
 Naming Conventions (per Architecture):
 - Tables: plural snake_case (search_terms, sources, matches)
@@ -108,6 +109,25 @@ class Source(TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<Source(id={self.id}, name='{self.name}', is_active={self.is_active})>"
+
+
+class AppSettings(TimestampMixin, Base):
+    """
+    Application settings - single row table for app-wide state.
+
+    This table stores application-level settings like last_seen_at
+    for tracking when the user last viewed the dashboard.
+
+    Attributes:
+        last_seen_at: When the user last viewed the dashboard
+    """
+
+    __tablename__ = "app_settings"
+
+    last_seen_at = Column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<AppSettings(id={self.id}, last_seen_at={self.last_seen_at})>"
 
 
 class Match(TimestampMixin, Base):

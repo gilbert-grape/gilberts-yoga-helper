@@ -1,0 +1,72 @@
+{% extends "_base.html" %}
+
+{% block title %}Suchbegriffe{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Suchbegriffe verwalten</h1>
+    <p class="text-gray-600">Konfigurieren Sie Ihre Suchbegriffe und deren Matching-Typ</p>
+</div>
+
+{# Add new search term form #}
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Neuen Suchbegriff hinzufügen</h2>
+    <form
+        hx-post="/admin/search-terms"
+        hx-target="#search-terms-list"
+        hx-swap="innerHTML"
+        class="flex flex-col sm:flex-row gap-4"
+    >
+        <div class="flex-1">
+            <label for="term" class="sr-only">Suchbegriff</label>
+            <input
+                type="text"
+                name="term"
+                id="term"
+                placeholder="z.B. Glock 17, SIG 550"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                required
+            >
+        </div>
+        <div class="sm:w-40">
+            <label for="match_type" class="sr-only">Matching-Typ</label>
+            <select
+                name="match_type"
+                id="match_type"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            >
+                <option value="exact">Exakt</option>
+                <option value="similar">Ähnlich</option>
+            </select>
+        </div>
+        <button
+            type="submit"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Hinzufügen
+        </button>
+    </form>
+</div>
+
+{# Search terms list container for HTMX updates #}
+<div id="search-terms-list">
+    {% include "admin/_partials/_search_terms_list.html" %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Clear input after successful form submission
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'search-terms-list') {
+            const form = document.querySelector('form[hx-post="/admin/search-terms"]');
+            if (form) {
+                form.reset();
+            }
+        }
+    });
+</script>
+{% endblock %}

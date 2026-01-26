@@ -1,0 +1,508 @@
+"""
+Tests for crawler orchestrator.
+
+Tests the crawl orchestration:
+- Sequential execution of scrapers
+- Error isolation (failure doesn't stop others)
+- Matching and persistence integration
+- Summary logging
+"""
+import asyncio
+import pytest
+from unittest.mock import patch, MagicMock, AsyncMock
+from datetime import datetime, timezone
+
+from backend.database.models import Match, SearchTerm, Source
+from backend.database.crud import (
+    create_search_term,
+    get_or_create_source,
+    get_all_matches,
+)
+from backend.services.crawler import (
+    CrawlResult,
+    SCRAPER_REGISTRY,
+    SOURCE_BASE_URLS,
+    ensure_sources_exist,
+    get_registered_sources,
+    run_crawl,
+    run_crawl_async,
+    run_single_scraper,
+)
+
+
+def make_async_scraper(return_value):
+    """Helper to create an async mock scraper that returns given value."""
+    async def scraper():
+        return return_value
+    return scraper
+
+
+def make_failing_async_scraper(exception):
+    """Helper to create an async mock scraper that raises given exception."""
+    async def scraper():
+        raise exception
+    return scraper
+
+
+class TestScraperRegistry:
+    """Tests for scraper registry configuration."""
+
+    def test_registry_has_all_sources(self):
+        """Test that all expected sources are registered."""
+        expected = {"waffenboerse.ch", "waffengebraucht.ch", "waffenzimmi.ch"}
+        assert set(SCRAPER_REGISTRY.keys()) == expected
+
+    def test_base_urls_match_registry(self):
+        """Test that base URLs exist for all registered scrapers."""
+        for source_name in SCRAPER_REGISTRY:
+            assert source_name in SOURCE_BASE_URLS
+            assert SOURCE_BASE_URLS[source_name].startswith("https://")
+
+    def test_get_registered_sources(self):
+        """Test get_registered_sources returns all source names."""
+        sources = get_registered_sources()
+        assert len(sources) == 3
+        assert "waffenboerse.ch" in sources
+        assert "waffengebraucht.ch" in sources
+        assert "waffenzimmi.ch" in sources
+
+
+class TestEnsureSourcesExist:
+    """Tests for ensure_sources_exist function."""
+
+    def test_creates_missing_sources(self, test_session):
+        """Test that missing sources are created."""
+        # No sources initially
+        assert test_session.query(Source).count() == 0
+
+        source_map = ensure_sources_exist(test_session)
+
+        # All sources created
+        assert test_session.query(Source).count() == 3
+        assert "waffenboerse.ch" in source_map
+        assert "waffengebraucht.ch" in source_map
+        assert "waffenzimmi.ch" in source_map
+
+    def test_returns_source_ids(self, test_session):
+        """Test that source_map contains correct IDs."""
+        source_map = ensure_sources_exist(test_session)
+
+        for name, source_id in source_map.items():
+            source = test_session.query(Source).filter(Source.id == source_id).first()
+            assert source is not None
+            assert source.name == name
+
+    def test_idempotent(self, test_session):
+        """Test that calling multiple times doesn't create duplicates."""
+        ensure_sources_exist(test_session)
+        ensure_sources_exist(test_session)
+        ensure_sources_exist(test_session)
+
+        assert test_session.query(Source).count() == 3
+
+
+class TestRunSingleScraper:
+    """Tests for run_single_scraper function."""
+
+    @pytest.mark.asyncio
+    async def test_successful_scrape(self, test_session):
+        """Test successful scraper execution."""
+        source = get_or_create_source(test_session, "test.ch", "https://test.ch")
+
+        mock_scraper = make_async_scraper([
+            {"title": "Test Item", "price": 100, "link": "https://test.ch/1", "source": "test.ch"}
+        ])
+
+        results, error = await run_single_scraper(source, mock_scraper)
+
+        assert error is None
+        assert len(results) == 1
+        assert results[0]["title"] == "Test Item"
+
+    @pytest.mark.asyncio
+    async def test_failed_scrape_returns_error(self, test_session):
+        """Test that scraper failure returns error message."""
+        source = get_or_create_source(test_session, "test.ch", "https://test.ch")
+
+        failing_scraper = make_failing_async_scraper(ValueError("Connection failed"))
+
+        results, error = await run_single_scraper(source, failing_scraper)
+
+        assert results == []
+        assert error is not None
+        assert "ValueError" in error
+        assert "Connection failed" in error
+
+    @pytest.mark.asyncio
+    async def test_failed_scrape_isolates_error(self, test_session):
+        """Test that scraper failure doesn't raise exception."""
+        source = get_or_create_source(test_session, "test.ch", "https://test.ch")
+
+        failing_scraper = make_failing_async_scraper(RuntimeError("Unexpected error"))
+
+        # Should not raise
+        results, error = await run_single_scraper(source, failing_scraper)
+        assert error is not None
+
+
+class TestCrawlResult:
+    """Tests for CrawlResult dataclass."""
+
+    def test_default_values(self):
+        """Test CrawlResult has correct defaults."""
+        result = CrawlResult()
+
+        assert result.sources_attempted == 0
+        assert result.sources_succeeded == 0
+        assert result.sources_failed == 0
+        assert result.total_listings == 0
+        assert result.new_matches == 0
+        assert result.duplicate_matches == 0
+        assert result.failed_sources == []
+        assert result.duration_seconds == 0.0
+
+    def test_str_representation(self):
+        """Test CrawlResult string representation."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=2,
+            sources_failed=1,
+            total_listings=100,
+            new_matches=10,
+            duration_seconds=5.5,
+        )
+
+        str_rep = str(result)
+        assert "attempted=3" in str_rep
+        assert "succeeded=2" in str_rep
+        assert "failed=1" in str_rep
+        assert "listings=100" in str_rep
+        assert "new_matches=10" in str_rep
+
+
+class TestRunCrawl:
+    """Tests for run_crawl orchestration."""
+
+    def test_no_active_sources(self, test_session):
+        """Test crawl with no active sources."""
+        # Create inactive source only - don't let ensure_sources_exist run
+        # We need to mock SCRAPER_REGISTRY to be empty so no sources get created
+        with patch.dict(SCRAPER_REGISTRY, {}, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {}, clear=True):
+            # Create inactive source manually
+            source = get_or_create_source(test_session, "test.ch", "https://test.ch")
+            source.is_active = False
+            test_session.commit()
+
+            result = run_crawl(test_session)
+
+        assert result.sources_attempted == 0
+        assert result.sources_succeeded == 0
+
+    def test_no_search_terms_still_scrapes(self, test_session):
+        """Test that crawl runs scrapers even without search terms."""
+        # Mock all scrapers to return results as async functions
+        mock_results = [
+            {"title": "Test", "price": 100, "link": "https://test.ch/1", "source": "waffenboerse.ch"}
+        ]
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper(mock_results),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        # Scrapers ran
+        assert result.sources_attempted == 3
+        assert result.sources_succeeded == 3
+        assert result.total_listings == 1
+        # But no matches without search terms
+        assert result.new_matches == 0
+
+    def test_sequential_execution(self, test_session):
+        """Test that scrapers run sequentially (AC: 1)."""
+        execution_order = []
+
+        def make_tracking_scraper(name):
+            async def scraper():
+                execution_order.append(name)
+                return []
+            return scraper
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_tracking_scraper("waffenboerse"),
+            "waffengebraucht.ch": make_tracking_scraper("waffengebraucht"),
+            "waffenzimmi.ch": make_tracking_scraper("waffenzimmi"),
+        }):
+            run_crawl(test_session)
+
+        # All scrapers executed
+        assert len(execution_order) == 3
+        # Order determined by database query, but all should run
+
+    def test_failure_continues_to_next(self, test_session):
+        """Test that scraper failure continues to next (AC: 2)."""
+        execution_order = []
+
+        async def failing_scraper():
+            execution_order.append("failing")
+            raise ValueError("Failed")
+
+        async def success_scraper():
+            execution_order.append("success")
+            return []
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": failing_scraper,
+            "waffengebraucht.ch": success_scraper,
+            "waffenzimmi.ch": success_scraper,
+        }):
+            result = run_crawl(test_session)
+
+        # All scrapers attempted despite failure
+        assert len(execution_order) == 3
+        assert result.sources_attempted == 3
+        assert result.sources_failed == 1
+        assert result.sources_succeeded == 2
+        assert "waffenboerse.ch" in result.failed_sources
+
+    def test_updates_source_last_crawl_at(self, test_session):
+        """Test that successful scrape updates last_crawl_at."""
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            before = datetime.now(timezone.utc).replace(tzinfo=None)
+            run_crawl(test_session)
+            after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        source = test_session.query(Source).filter(Source.name == "waffenboerse.ch").first()
+        assert source.last_crawl_at is not None
+        assert before <= source.last_crawl_at <= after
+
+    def test_updates_source_last_error_on_failure(self, test_session):
+        """Test that failed scrape updates last_error."""
+        failing_scraper = make_failing_async_scraper(ValueError("Test error message"))
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": failing_scraper,
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            run_crawl(test_session)
+
+        source = test_session.query(Source).filter(Source.name == "waffenboerse.ch").first()
+        assert source.last_error is not None
+        assert "ValueError" in source.last_error
+        assert "Test error message" in source.last_error
+
+    def test_clears_last_error_on_success(self, test_session):
+        """Test that successful scrape clears last_error."""
+        # Set initial error
+        source = get_or_create_source(test_session, "waffenboerse.ch", "https://waffenboerse.ch")
+        source.last_error = "Previous error"
+        test_session.commit()
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            run_crawl(test_session)
+
+        test_session.refresh(source)
+        assert source.last_error is None
+
+
+class TestRunCrawlWithMatching:
+    """Tests for crawl with matching integration."""
+
+    def test_matches_listings_against_search_terms(self, test_session):
+        """Test that listings are matched against search terms (AC: 4)."""
+        # Create search term
+        create_search_term(test_session, "Glock 17", match_type="exact")
+
+        mock_listings = [
+            {
+                "title": "Glock 17 Gen 5",
+                "price": 800,
+                "link": "https://waffenboerse.ch/glock17",
+                "image_url": "https://waffenboerse.ch/img.jpg",
+                "source": "waffenboerse.ch"
+            },
+            {
+                "title": "SIG P226",
+                "price": 900,
+                "link": "https://waffenboerse.ch/sig226",
+                "source": "waffenboerse.ch"
+            },
+        ]
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper(mock_listings),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        # Only Glock should match
+        assert result.new_matches == 1
+        assert result.total_listings == 2
+
+        # Verify match in database
+        matches = get_all_matches(test_session)
+        assert len(matches) == 1
+        assert "Glock 17" in matches[0].title
+
+    def test_deduplication_on_second_crawl(self, test_session):
+        """Test that duplicate matches are skipped on second crawl."""
+        create_search_term(test_session, "Glock", match_type="exact")
+
+        mock_listings = [
+            {
+                "title": "Glock 17",
+                "price": 800,
+                "link": "https://waffenboerse.ch/glock17",
+                "source": "waffenboerse.ch"
+            },
+        ]
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper(mock_listings),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            # First crawl
+            result1 = run_crawl(test_session)
+            assert result1.new_matches == 1
+            assert result1.duplicate_matches == 0
+
+            # Second crawl with same listings
+            result2 = run_crawl(test_session)
+            assert result2.new_matches == 0
+            assert result2.duplicate_matches == 1
+
+        # Only one match in database
+        assert test_session.query(Match).count() == 1
+
+    def test_multiple_search_terms(self, test_session):
+        """Test matching against multiple search terms."""
+        create_search_term(test_session, "Glock", match_type="exact")
+        create_search_term(test_session, "SIG", match_type="exact")
+
+        mock_listings = [
+            {
+                "title": "Glock 17 Gen 5",
+                "price": 800,
+                "link": "https://waffenboerse.ch/glock17",
+                "source": "waffenboerse.ch"
+            },
+            {
+                "title": "SIG P226",
+                "price": 900,
+                "link": "https://waffenboerse.ch/sig226",
+                "source": "waffenboerse.ch"
+            },
+            {
+                "title": "CZ 75",
+                "price": 700,
+                "link": "https://waffenboerse.ch/cz75",
+                "source": "waffenboerse.ch"
+            },
+        ]
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper(mock_listings),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        # Glock and SIG should match, CZ should not
+        assert result.new_matches == 2
+        assert result.total_listings == 3
+
+    def test_same_listing_multiple_terms(self, test_session):
+        """Test that same listing can match multiple terms."""
+        create_search_term(test_session, "Glock", match_type="exact")
+        create_search_term(test_session, "Gen 5", match_type="exact")
+
+        mock_listings = [
+            {
+                "title": "Glock 17 Gen 5",
+                "price": 800,
+                "link": "https://waffenboerse.ch/glock17",
+                "source": "waffenboerse.ch"
+            },
+        ]
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper(mock_listings),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        # Same listing matches both terms
+        assert result.new_matches == 2
+        assert test_session.query(Match).count() == 2
+
+
+class TestCrawlSummaryLogging:
+    """Tests for crawl summary logging (AC: 3)."""
+
+    def test_logs_summary(self, test_session):
+        """Test that crawl logs summary at end (AC: 3).
+
+        We verify this by checking that _log_crawl_summary is called
+        with the correct result data, which then logs the summary.
+        """
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            with patch("backend.services.crawler._log_crawl_summary") as mock_log:
+                result = run_crawl(test_session)
+
+        # Verify _log_crawl_summary was called with the result
+        mock_log.assert_called_once()
+        call_args = mock_log.call_args[0][0]
+        assert call_args.sources_attempted == 3
+        assert call_args.sources_succeeded == 3
+        assert call_args.sources_failed == 0
+
+    def test_logs_failed_sources(self, test_session):
+        """Test that failed sources are tracked in result (AC: 3)."""
+        failing_scraper = make_failing_async_scraper(ValueError("Failed"))
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": failing_scraper,
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        # Verify failed sources are tracked in result
+        assert result.sources_failed == 1
+        assert "waffenboerse.ch" in result.failed_sources
+
+
+class TestCrawlDuration:
+    """Tests for crawl duration tracking."""
+
+    def test_tracks_duration(self, test_session):
+        """Test that duration is tracked."""
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        # Duration should be non-negative (may be 0.0 for very fast runs)
+        assert result.duration_seconds >= 0
+        # Should be very fast with mock scrapers
+        assert result.duration_seconds < 10
