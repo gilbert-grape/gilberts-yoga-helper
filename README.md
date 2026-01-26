@@ -71,6 +71,32 @@ poetry install
 mkdir -p data logs
 ```
 
+#### Raspberry Pi
+
+```bash
+# Update system and install dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3 python3-pip python3-venv git sqlite3
+
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3 -
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Clone repository
+cd ~
+git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git
+cd gilberts-gun-crawler
+
+# Install dependencies (without dev dependencies for production)
+poetry install --no-dev
+
+# Create required directories
+mkdir -p data logs data/backups
+```
+
+For full Raspberry Pi production setup with systemd service, automatic daily crawls, and database backups, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ### Initialize Database
 
 ```bash
