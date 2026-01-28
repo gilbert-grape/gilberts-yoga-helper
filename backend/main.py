@@ -61,6 +61,7 @@ from backend.services.crawler import (
     is_crawl_running,
     get_crawl_state,
     get_last_crawl_result,
+    get_crawl_log,
 )
 from backend.utils.logging import get_logger
 
@@ -444,6 +445,7 @@ async def admin_crawl_status(request: Request):
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
+            "log_messages": get_crawl_log(),
         }
     )
 
@@ -465,6 +467,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
                 "is_running": True,
                 "current_source": crawl_state.current_source,
                 "last_result": crawl_state.last_result,
+                "log_messages": get_crawl_log(),
                 "error": "Ein Crawl läuft bereits.",
             }
         )
@@ -480,6 +483,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
                 "is_running": False,
                 "current_source": None,
                 "last_result": crawl_state.last_result,
+                "log_messages": get_crawl_log(),
                 "error": "Kein Crawl möglich: Bitte zuerst Suchbegriffe erfassen.",
             }
         )
@@ -495,6 +499,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
                 "is_running": False,
                 "current_source": None,
                 "last_result": result,
+                "log_messages": get_crawl_log(),
                 "success": "Crawl erfolgreich abgeschlossen.",
             }
         )
@@ -508,6 +513,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
                 "is_running": False,
                 "current_source": None,
                 "last_result": crawl_state.last_result,
+                "log_messages": get_crawl_log(),
                 "error": f"Crawl fehlgeschlagen: {str(e)}",
             }
         )
@@ -528,5 +534,6 @@ async def get_crawl_status_partial(request: Request):
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
+            "log_messages": get_crawl_log(),
         }
     )

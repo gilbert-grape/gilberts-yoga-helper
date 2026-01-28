@@ -115,10 +115,28 @@ class CrawlState:
     is_running: bool = False
     last_result: Optional[CrawlResult] = None
     current_source: Optional[str] = None
+    log_messages: list[str] = field(default_factory=list)
 
 
 # Global crawl state (single instance for single-user app)
 _crawl_state = CrawlState()
+
+
+def add_crawl_log(message: str) -> None:
+    """Add a log message to the current crawl state."""
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    _crawl_state.log_messages.append(f"[{timestamp}] {message}")
+
+
+def clear_crawl_log() -> None:
+    """Clear all log messages."""
+    _crawl_state.log_messages.clear()
+
+
+def get_crawl_log() -> list[str]:
+    """Get all log messages."""
+    return _crawl_state.log_messages.copy()
 
 
 def get_registered_sources() -> list[str]:
@@ -210,11 +228,13 @@ async def run_crawl_async(session: Session) -> CrawlResult:
     result = CrawlResult()
     result.started_at = datetime.now(timezone.utc)
 
-    # Mark as running
+    # Mark as running and clear log
     _crawl_state.is_running = True
     _crawl_state.current_source = None
+    clear_crawl_log()
 
     logger.info("Starting crawl run")
+    add_crawl_log("Crawl gestartet")
 
     try:
         # Ensure all sources exist in database and get source_id mapping
@@ -224,12 +244,14 @@ async def run_crawl_async(session: Session) -> CrawlResult:
         active_sources = get_active_sources(session)
         if not active_sources:
             logger.warning("No active sources found")
+            add_crawl_log("Keine aktiven Quellen gefunden")
             result.duration_seconds = time.time() - start_time
             result.completed_at = datetime.now(timezone.utc)
             _crawl_state.last_result = result
             return result
 
         logger.info(f"Found {len(active_sources)} active sources")
+        add_crawl_log(f"{len(active_sources)} aktive Quellen gefunden")
 
         # Collect all listings from all scrapers
         all_listings: ScraperResults = []
@@ -248,6 +270,7 @@ async def run_crawl_async(session: Session) -> CrawlResult:
 
             logger.info(f"Running scraper for {source.name}")
             _crawl_state.current_source = source.name
+            add_crawl_log(f"Starte {source.name}...")
 
             # Run scraper with error isolation (await async scraper)
             listings, error = await run_single_scraper(source, scraper_func)
@@ -256,6 +279,7 @@ async def run_crawl_async(session: Session) -> CrawlResult:
                 result.sources_failed += 1
                 result.failed_sources.append(source.name)
                 source.last_error = error
+                add_crawl_log(f"✗ {source.name}: Fehler - {error[:50]}")
             else:
                 result.sources_succeeded += 1
                 result.total_listings += len(listings)
@@ -263,6 +287,7 @@ async def run_crawl_async(session: Session) -> CrawlResult:
                 source.last_crawl_at = datetime.now(timezone.utc)
                 source.last_error = None
                 logger.info(f"Scraped {len(listings)} listings from {source.name}")
+                add_crawl_log(f"✓ {source.name}: {len(listings)} Inserate gefunden")
 
         # Commit source updates
         session.commit()
@@ -271,6 +296,7 @@ async def run_crawl_async(session: Session) -> CrawlResult:
         search_terms = get_active_search_terms(session)
         if not search_terms:
             logger.warning("No active search terms found, skipping matching")
+            add_crawl_log("Keine Suchbegriffe - Matching übersprungen")
             result.duration_seconds = time.time() - start_time
             result.completed_at = datetime.now(timezone.utc)
             _crawl_state.last_result = result
@@ -283,16 +309,20 @@ async def run_crawl_async(session: Session) -> CrawlResult:
         logger.info(
             f"Matching {len(all_listings)} listings against {len(term_dicts)} search terms"
         )
+        add_crawl_log(f"Vergleiche {len(all_listings)} Inserate mit {len(term_dicts)} Suchbegriffen...")
 
         # Find matches
         match_results = find_matches(all_listings, term_dicts)
         logger.info(f"Found {len(match_results)} potential matches")
+        add_crawl_log(f"→ {len(match_results)} potentielle Treffer gefunden")
 
         # Save matches with deduplication
         if match_results:
+            add_crawl_log("Speichere Treffer...")
             new_count, dup_count = save_matches(session, match_results, source_map)
             result.new_matches = new_count
             result.duplicate_matches = dup_count
+            add_crawl_log(f"✓ {new_count} neue Treffer, {dup_count} Duplikate übersprungen")
 
         result.duration_seconds = time.time() - start_time
         result.completed_at = datetime.now(timezone.utc)
@@ -301,11 +331,13 @@ async def run_crawl_async(session: Session) -> CrawlResult:
         _crawl_state.last_result = result
 
         _log_crawl_summary(result)
+        add_crawl_log(f"Crawl abgeschlossen in {result.duration_seconds:.1f}s")
 
         return result
 
     except Exception as e:
         logger.error(f"Crawl failed with exception: {e}")
+        add_crawl_log(f"✗ FEHLER: {str(e)}")
         raise
 
     finally:
