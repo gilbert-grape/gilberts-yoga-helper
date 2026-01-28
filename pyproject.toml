@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "gebrauchtwaffen-aggregator"
+name = "gilberts-yoga-helper"
 package-mode = false
 version = "0.1.0"
-description = "Swiss used firearms aggregator - personal web app for Raspberry Pi"
+description = "Gilbert's Yoga Helper - personal web app for Raspberry Pi"
 authors = ["Löli"]
 readme = "README.md"
 

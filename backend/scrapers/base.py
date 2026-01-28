@@ -49,7 +49,7 @@ def get_user_agent() -> str:
     Returns:
         User-Agent string identifying the scraper.
     """
-    return "Mozilla/5.0 (compatible; GebrauchtWaffenAggregator/1.0)"
+    return "Mozilla/5.0 (compatible; YogaHelper/1.0)"
 
 
 def create_http_client() -> httpx.AsyncClient:
