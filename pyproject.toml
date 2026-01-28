@@ -1,5 +1,6 @@
 [tool.poetry]
 name = "gebrauchtwaffen-aggregator"
+package-mode = false
 version = "0.1.0"
 description = "Swiss used firearms aggregator - personal web app for Raspberry Pi"
 authors = ["Löli"]
