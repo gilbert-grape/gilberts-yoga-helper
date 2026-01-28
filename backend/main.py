@@ -41,6 +41,7 @@ from backend.database import (
     get_all_matches,
     get_all_search_terms,
     get_all_search_terms_sorted,
+    get_active_search_terms,
     get_search_term_by_id,
     get_search_term_by_term,
     create_search_term,
@@ -465,6 +466,21 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
                 "current_source": crawl_state.current_source,
                 "last_result": crawl_state.last_result,
                 "error": "Ein Crawl läuft bereits.",
+            }
+        )
+
+    # Check if there are active search terms
+    active_terms = get_active_search_terms(db)
+    if not active_terms:
+        crawl_state = get_crawl_state()
+        return templates.TemplateResponse(
+            request,
+            "admin/_partials/_crawl_status.html",
+            {
+                "is_running": False,
+                "current_source": None,
+                "last_result": crawl_state.last_result,
+                "error": "Kein Crawl möglich: Bitte zuerst Suchbegriffe erfassen.",
             }
         )
 

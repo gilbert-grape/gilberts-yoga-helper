@@ -209,8 +209,19 @@ class TestManualCrawlTrigger:
         response = client.get("/admin/crawl")
         assert "waffenboerse.ch" in response.text
 
+    def test_start_crawl_rejected_without_search_terms(self, client, reset_crawl_state, db_session):
+        """Test that starting crawl is rejected when no search terms exist."""
+        # Ensure no search terms exist
+        db_session.query(SearchTerm).delete()
+        db_session.commit()
+
+        response = client.post("/admin/crawl/start")
+
+        assert response.status_code == 200
+        assert "Suchbegriffe" in response.text
+
     @patch("backend.main.run_crawl_async")
-    def test_start_crawl_success(self, mock_crawl, client, reset_crawl_state):
+    def test_start_crawl_success(self, mock_crawl, client, reset_crawl_state, sample_search_terms):
         """Test successfully starting a crawl."""
         from datetime import datetime, timezone
 
@@ -232,7 +243,7 @@ class TestManualCrawlTrigger:
         assert "erfolgreich" in response.text.lower()
 
     @patch("backend.main.run_crawl_async")
-    def test_start_crawl_shows_results(self, mock_crawl, client, reset_crawl_state):
+    def test_start_crawl_shows_results(self, mock_crawl, client, reset_crawl_state, sample_search_terms):
         """Test that crawl results are shown after completion."""
         from datetime import datetime, timezone
 
@@ -253,7 +264,7 @@ class TestManualCrawlTrigger:
         assert "100" in response.text  # total_listings
         assert "25" in response.text   # new_matches
 
-    def test_start_crawl_rejected_when_running(self, client, reset_crawl_state):
+    def test_start_crawl_rejected_when_running(self, client, reset_crawl_state, sample_search_terms):
         """Test that starting crawl is rejected when already running."""
         from backend.services import crawler
 
@@ -265,7 +276,7 @@ class TestManualCrawlTrigger:
         assert "läuft bereits" in response.text
 
     @patch("backend.main.run_crawl_async")
-    def test_start_crawl_handles_error(self, mock_crawl, client, reset_crawl_state):
+    def test_start_crawl_handles_error(self, mock_crawl, client, reset_crawl_state, sample_search_terms):
         """Test that errors during crawl are handled gracefully."""
         mock_crawl.side_effect = Exception("Test error")
 
