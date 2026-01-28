@@ -14,6 +14,7 @@ Exports:
     - REQUEST_TIMEOUT: Timeout constant (30 seconds)
     - REQUEST_DELAY_MIN: Minimum delay constant (2 seconds)
     - REQUEST_DELAY_MAX: Maximum delay constant (5 seconds)
+    - scrape_aebiwaffen: Scraper function for aebiwaffen.ch
     - scrape_waffenboerse: Scraper function for waffenboerse.ch
     - scrape_waffengebraucht: Scraper function for waffengebraucht.ch
     - scrape_waffenzimmi: Scraper function for waffenzimmi.ch
@@ -30,6 +31,7 @@ from backend.scrapers.base import (
     make_absolute_url,
     parse_price,
 )
+from backend.scrapers.aebiwaffen import scrape_aebiwaffen
 from backend.scrapers.waffenboerse import scrape_waffenboerse
 from backend.scrapers.waffengebraucht import scrape_waffengebraucht
 from backend.scrapers.waffenzimmi import scrape_waffenzimmi
@@ -50,6 +52,7 @@ __all__ = [
     "make_absolute_url",
     "parse_price",
     # Scrapers
+    "scrape_aebiwaffen",
     "scrape_waffenboerse",
     "scrape_waffengebraucht",
     "scrape_waffenzimmi",

@@ -49,7 +49,7 @@ class TestScraperRegistry:
 
     def test_registry_has_all_sources(self):
         """Test that all expected sources are registered."""
-        expected = {"waffenboerse.ch", "waffengebraucht.ch", "waffenzimmi.ch"}
+        expected = {"aebiwaffen.ch", "waffenboerse.ch", "waffengebraucht.ch", "waffenzimmi.ch"}
         assert set(SCRAPER_REGISTRY.keys()) == expected
 
     def test_base_urls_match_registry(self):
@@ -61,7 +61,8 @@ class TestScraperRegistry:
     def test_get_registered_sources(self):
         """Test get_registered_sources returns all source names."""
         sources = get_registered_sources()
-        assert len(sources) == 3
+        assert len(sources) == 4
+        assert "aebiwaffen.ch" in sources
         assert "waffenboerse.ch" in sources
         assert "waffengebraucht.ch" in sources
         assert "waffenzimmi.ch" in sources
@@ -78,7 +79,8 @@ class TestEnsureSourcesExist:
         source_map = ensure_sources_exist(test_session)
 
         # All sources created
-        assert test_session.query(Source).count() == 3
+        assert test_session.query(Source).count() == 4
+        assert "aebiwaffen.ch" in source_map
         assert "waffenboerse.ch" in source_map
         assert "waffengebraucht.ch" in source_map
         assert "waffenzimmi.ch" in source_map
@@ -98,7 +100,7 @@ class TestEnsureSourcesExist:
         ensure_sources_exist(test_session)
         ensure_sources_exist(test_session)
 
-        assert test_session.query(Source).count() == 3
+        assert test_session.query(Source).count() == 4
 
 
 class TestRunSingleScraper:
