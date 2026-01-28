@@ -38,15 +38,23 @@ async def scrape_waffenzimmi() -> ScraperResults:
         List of ScraperResult dicts with title, price, image_url, link, source.
         Returns empty list on any error.
     """
+    # Import here to avoid circular dependency
+    from backend.services.crawler import add_crawl_log
+
     results: ScraperResults = []
 
     try:
         async with create_http_client() as client:
             for category_url in CATEGORY_URLS:
+                # Extract category name from URL for logging
+                category_name = category_url.rstrip("/").split("/")[-1].replace("-waffen", "")
+                add_crawl_log(f"  → Kategorie: {category_name}")
+
                 page = 1
                 while page <= MAX_PAGES:
                     # WooCommerce pagination uses /page/N/ pattern
                     url = category_url if page == 1 else f"{category_url}page/{page}/"
+                    add_crawl_log(f"    Seite {page}...")
 
                     response = await client.get(url)
                     response.raise_for_status()

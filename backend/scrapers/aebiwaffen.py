@@ -34,6 +34,9 @@ async def scrape_aebiwaffen() -> ScraperResults:
         List of ScraperResult dicts with title, price, image_url, link, source.
         Returns empty list on any error.
     """
+    # Import here to avoid circular dependency
+    from backend.services.crawler import add_crawl_log
+
     results: ScraperResults = []
 
     try:
@@ -42,6 +45,7 @@ async def scrape_aebiwaffen() -> ScraperResults:
             while page <= MAX_PAGES:
                 # Pagination uses ?seite=N parameter
                 url = LISTINGS_URL if page == 1 else f"{LISTINGS_URL}?seite={page}"
+                add_crawl_log(f"    Seite {page}...")
 
                 response = await client.get(url)
                 response.raise_for_status()
