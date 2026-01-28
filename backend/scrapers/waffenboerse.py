@@ -21,23 +21,22 @@ from backend.utils.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://www.waffenboerse.ch"
-# Site uses category-based listings with infinite scroll
-# Scrape each category separately to get more results
-CATEGORY_URLS = [
-    f"{BASE_URL}/de/occasionen/gebrauchtwaffen/faustfeuerwaffen/",  # Handguns
-    f"{BASE_URL}/de/occasionen/gebrauchtwaffen/jagdwaffen/",  # Hunting rifles
-    f"{BASE_URL}/de/occasionen/gebrauchtwaffen/sportwaffen/",  # Sporting weapons
-    f"{BASE_URL}/de/occasionen/gebrauchtwaffen/raritaeten/",  # Rarities/Collectibles
-    f"{BASE_URL}/de/occasionen/gebrauchtwaffen/blankwaffen/",  # Bladed weapons
-]
+# Site uses search-based scraping - search for each term directly
+# This is more efficient than trying to paginate through infinite scroll
+SEARCH_URL = f"{BASE_URL}/de/search/Section1.htm"
 SOURCE_NAME = "waffenboerse.ch"
-MAX_PAGES = 10  # Reasonable limit to avoid excessive scraping
-# Note: Site uses infinite scroll - we scrape first page of each category
+MAX_PAGES = 5  # Max pages per search term
 
 
-async def scrape_waffenboerse() -> ScraperResults:
+async def scrape_waffenboerse(search_terms: list[str] | None = None) -> ScraperResults:
     """
-    Scrape all listings from waffenboerse.ch.
+    Scrape listings from waffenboerse.ch using search.
+
+    This scraper uses the site's search functionality to find relevant listings.
+    If no search_terms are provided, it will fetch them from the database.
+
+    Args:
+        search_terms: Optional list of search terms. If None, fetches from database.
 
     Returns:
         List of ScraperResult dicts with title, price, image_url, link, source.
@@ -45,20 +44,35 @@ async def scrape_waffenboerse() -> ScraperResults:
     """
     # Import here to avoid circular dependency
     from backend.services.crawler import add_crawl_log
+    from urllib.parse import quote_plus
+
+    # If no search terms provided, get them from the database
+    if search_terms is None:
+        from backend.database import SessionLocal
+        from backend.database.crud import get_active_search_terms
+        with SessionLocal() as session:
+            db_terms = get_active_search_terms(session)
+            search_terms = [t.term for t in db_terms]
+
+    if not search_terms:
+        logger.warning(f"{SOURCE_NAME} - No search terms to search for")
+        return []
 
     results: ScraperResults = []
+    seen_links: set[str] = set()  # Deduplicate results across searches
 
     try:
         async with create_http_client() as client:
-            for category_url in CATEGORY_URLS:
-                # Extract category name from URL for logging
-                category_name = category_url.rstrip("/").split("/")[-1]
-                add_crawl_log(f"  → Kategorie: {category_name}")
+            for term in search_terms:
+                add_crawl_log(f"  → Suche: '{term}'")
 
                 page = 1
                 while page <= MAX_PAGES:
-                    # Construct URL for current page
-                    url = category_url if page == 1 else f"{category_url}?page={page}"
+                    # Construct search URL with query parameter
+                    encoded_term = quote_plus(term)
+                    url = f"{SEARCH_URL}?query={encoded_term}"
+                    if page > 1:
+                        url += f"&page={page}"
                     add_crawl_log(f"    Seite {page}...")
 
                     response = await client.get(url)
@@ -67,61 +81,40 @@ async def scrape_waffenboerse() -> ScraperResults:
                     # Parse HTML
                     soup = BeautifulSoup(response.text, "lxml")
 
-                    # Find all listing items - updated for new site structure
-                    # New structure uses .article-list-item containers
-                    listings = soup.select(".article-list-item, .inserat-item, .listing-item, article.inserat")
-
-                    # If no specific selectors work, try finding detail page links
-                    if not listings:
-                        # Try finding links that look like listing detail pages
-                        # New URL pattern: /de/-XXXXX.html
-                        listings = soup.select("a[href*='/de/-'], a[href*='/inserat/']")
-                        if listings:
-                            # Process parent containers instead
-                            listings = [_find_listing_container(elem) for elem in listings]
-                            listings = [l for l in listings if l is not None]
-                            # Deduplicate by removing repeated parent containers
-                            seen_ids: set[int] = set()
-                            unique_listings = []
-                            for listing in listings:
-                                listing_id = id(listing)
-                                if listing_id not in seen_ids:
-                                    seen_ids.add(listing_id)
-                                    unique_listings.append(listing)
-                            listings = unique_listings
+                    # Find all listing items
+                    listings = soup.select("article.article-list-item, .article-list-item")
 
                     if not listings:
-                        # No listings found on this page
                         if page == 1:
-                            logger.warning(f"{SOURCE_NAME} - No listings found on {category_url}, HTML structure may have changed")
+                            add_crawl_log(f"    Keine Ergebnisse für '{term}'")
                         break
 
                     page_results = 0
                     for listing in listings:
                         try:
                             result = _parse_listing(listing)
-                            if result:
+                            if result and result["link"] not in seen_links:
+                                seen_links.add(result["link"])
                                 results.append(result)
                                 page_results += 1
                         except Exception as e:
                             logger.warning(f"{SOURCE_NAME} - Failed to parse listing: {e}")
                             continue
 
-                    logger.debug(f"{SOURCE_NAME} - {category_url} page {page}: found {page_results} listings")
+                    logger.debug(f"{SOURCE_NAME} - Search '{term}' page {page}: found {page_results} new listings")
 
-                    # Check if there's a next page (infinite scroll may not have traditional pagination)
-                    if not _has_next_page(soup, page):
+                    # Check if there's a next page
+                    if not _has_next_page(soup, page) or page_results == 0:
                         break
 
                     page += 1
                     if page <= MAX_PAGES:
                         await delay_between_requests()
 
-                # Delay between categories
-                if category_url != CATEGORY_URLS[-1]:
-                    await delay_between_requests()
+                # Delay between search terms
+                await delay_between_requests()
 
-            logger.info(f"{SOURCE_NAME} - Scraped {len(results)} listings total")
+            logger.info(f"{SOURCE_NAME} - Scraped {len(results)} unique listings total")
 
     except Exception as e:
         logger.error(f"{SOURCE_NAME} - Failed: {e}")
