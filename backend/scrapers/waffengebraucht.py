@@ -20,7 +20,7 @@ from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-BASE_URL = "https://www.waffengebraucht.ch"
+BASE_URL = "https://waffengebraucht.ch"  # Note: no www - site redirects
 # Site uses category-based listings - kurzwaffen (handguns) and langwaffen (long guns)
 CATEGORY_URLS = [
     f"{BASE_URL}/li/kurzwaffen",
@@ -61,29 +61,13 @@ async def scrape_waffengebraucht() -> ScraperResults:
 
                     soup = BeautifulSoup(response.text, "lxml")
 
-                    # Find all listing items - try multiple selector strategies
-                    listings = soup.select(".inserat-item, .listing-item, article.inserat, .item")
+                    # Find all listing items - site uses __Item class with __ItemById_ prefix
+                    # Structure: .__ProductItemListener > .__Item.__ItemById_XXXXX
+                    listings = soup.select(".__ProductItemListener .__Item[class*='__ItemById_']")
 
-                    # Fallback: look for links that match listing detail page pattern
+                    # Fallback: try other selectors
                     if not listings:
-                        # waffengebraucht.ch uses URLs like /location/item-name/id
-                        listing_links = soup.select("a[href]")
-                        listing_links = [
-                            a for a in listing_links
-                            if a.get("href") and re.match(r"^/[^/]+/[^/]+/\d+$", a.get("href", ""))
-                        ]
-                        if listing_links:
-                            listings = [_find_listing_container(elem) for elem in listing_links]
-                            listings = [l for l in listings if l is not None]
-                            # Deduplicate by removing repeated parent containers
-                            seen_ids: set[int] = set()
-                            unique_listings = []
-                            for listing in listings:
-                                listing_id = id(listing)
-                                if listing_id not in seen_ids:
-                                    seen_ids.add(listing_id)
-                                    unique_listings.append(listing)
-                            listings = unique_listings
+                        listings = soup.select("div[class*='__ItemById_']")
 
                     if not listings:
                         if page == 1:
@@ -177,19 +161,24 @@ def _parse_listing(listing: Tag) -> Optional[ScraperResult]:
 
 def _extract_title(listing: Tag) -> Optional[str]:
     """Extract title from listing element."""
-    # Try common title selectors
+    # Site uses .__ProductTitle with link inside
     title_selectors = [
+        ".__ProductTitle a",
+        ".__ProductTitle",
         ".title",
-        ".inserat-title",
-        "h2",
-        "h3",
-        ".name",
-        "a[href]",  # Often the listing link contains the title
+        "a[href]",
     ]
 
     for selector in title_selectors:
         elem = listing.select_one(selector)
         if elem:
+            # Try title attribute first (cleaner)
+            title = elem.get("title", "")
+            if title:
+                # Remove site suffix from title
+                title = title.replace(" - Waffengebraucht.ch", "")
+                return title
+            # Fall back to text content
             title = elem.get_text(strip=True)
             if title:
                 return title
@@ -199,22 +188,20 @@ def _extract_title(listing: Tag) -> Optional[str]:
 
 def _extract_link(listing: Tag) -> Optional[str]:
     """Extract link from listing element."""
-    # Try to find the detail page link - waffengebraucht.ch uses /location/item/id pattern
-    link_elem = listing.select_one("a[href]")
+    # Site uses .__ProductTitle a for the main link
+    link_elem = listing.select_one(".__ProductTitle a[href]")
+
+    if not link_elem:
+        # Fallback to any link
+        link_elem = listing.select_one("a[href]")
 
     if link_elem and link_elem.get("href"):
         href = link_elem["href"]
         if isinstance(href, list):
             href = href[0]
-        # Check if it looks like a listing detail URL
-        if re.match(r"^/[^/]+/[^/]+/\d+$", href) or href.startswith("http"):
-            return make_absolute_url(BASE_URL, href)
-
-    # If listing itself is a link
-    if listing.name == "a" and listing.get("href"):
-        href = listing["href"]
-        if isinstance(href, list):
-            href = href[0]
+        # URLs are already absolute on this site
+        if href.startswith("http"):
+            return href
         return make_absolute_url(BASE_URL, href)
 
     return None
@@ -222,13 +209,28 @@ def _extract_link(listing: Tag) -> Optional[str]:
 
 def _extract_price(listing: Tag) -> Optional[float]:
     """Extract price from listing element."""
-    # Try common price selectors
+    # Site uses .__SetPriceRequest with data-price attribute
+    price_elem = listing.select_one(".__SetPriceRequest[data-price]")
+    if price_elem:
+        data_price = price_elem.get("data-price")
+        if data_price:
+            try:
+                return float(data_price)
+            except ValueError:
+                pass
+
+    # Fallback: try to find price in .GreenInfo
+    green_info = listing.select_one(".GreenInfo")
+    if green_info:
+        price_text = green_info.get_text(strip=True)
+        price = parse_price(price_text)
+        if price is not None:
+            return price
+
+    # Try other common price selectors
     price_selectors = [
         ".price",
-        ".inserat-price",
-        ".preis",
         "[class*='price']",
-        "[class*='preis']",
     ]
 
     for selector in price_selectors:
@@ -253,18 +255,18 @@ def _extract_price(listing: Tag) -> Optional[float]:
 
 def _extract_image_url(listing: Tag) -> Optional[str]:
     """Extract image URL from listing element."""
-    # Try common image selectors
-    img_elem = listing.select_one("img, .image img, .thumbnail img")
+    # Site uses .__ImageView img with lazyload (data-src)
+    img_elem = listing.select_one(".__ImageView img, img.lazyload, img")
 
     if img_elem:
-        # Try different image source attributes
-        for attr in ["src", "data-src", "data-lazy-src"]:
+        # Try data-src first (lazyload), then src
+        for attr in ["data-src", "src", "data-lazy-src"]:
             img_url = img_elem.get(attr)
             if img_url:
                 if isinstance(img_url, list):
                     img_url = img_url[0]
-                # Skip placeholder images
-                if "placeholder" not in img_url.lower() and "blank" not in img_url.lower():
+                # Skip placeholder images (default.png is the placeholder)
+                if "default.png" not in img_url.lower() and "placeholder" not in img_url.lower():
                     return make_absolute_url(BASE_URL, img_url)
 
     return None
