@@ -113,6 +113,7 @@ class CrawlState:
     """
 
     is_running: bool = False
+    cancel_requested: bool = False
     last_result: Optional[CrawlResult] = None
     current_source: Optional[str] = None
     log_messages: list[str] = field(default_factory=list)
@@ -152,6 +153,26 @@ def get_crawl_state() -> CrawlState:
 def is_crawl_running() -> bool:
     """Check if a crawl is currently running."""
     return _crawl_state.is_running
+
+
+def request_crawl_cancel() -> bool:
+    """
+    Request cancellation of the currently running crawl.
+
+    Returns:
+        True if a crawl was running and cancellation was requested,
+        False if no crawl is running.
+    """
+    if _crawl_state.is_running:
+        _crawl_state.cancel_requested = True
+        logger.info("Crawl cancellation requested")
+        return True
+    return False
+
+
+def is_cancel_requested() -> bool:
+    """Check if cancellation has been requested."""
+    return _crawl_state.cancel_requested
 
 
 def get_last_crawl_result() -> Optional[CrawlResult]:
@@ -228,8 +249,9 @@ async def run_crawl_async(session: Session) -> CrawlResult:
     result = CrawlResult()
     result.started_at = datetime.now(timezone.utc)
 
-    # Mark as running and clear log
+    # Mark as running, reset cancel flag and clear log
     _crawl_state.is_running = True
+    _crawl_state.cancel_requested = False
     _crawl_state.current_source = None
     clear_crawl_log()
 
@@ -257,6 +279,15 @@ async def run_crawl_async(session: Session) -> CrawlResult:
         all_listings: ScraperResults = []
 
         for source in active_sources:
+            # Check for cancellation before starting next source
+            if _crawl_state.cancel_requested:
+                logger.info("Crawl cancelled by user")
+                result.duration_seconds = time.time() - start_time
+                result.completed_at = datetime.now(timezone.utc)
+                _crawl_state.last_result = result
+                _log_crawl_summary(result)
+                return result
+
             result.sources_attempted += 1
 
             # Check if scraper exists for this source
@@ -343,6 +374,7 @@ async def run_crawl_async(session: Session) -> CrawlResult:
     finally:
         # Always reset running state
         _crawl_state.is_running = False
+        _crawl_state.cancel_requested = False
         _crawl_state.current_source = None
 
 

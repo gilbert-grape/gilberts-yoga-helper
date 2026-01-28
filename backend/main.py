@@ -62,6 +62,7 @@ from backend.services.crawler import (
     get_crawl_state,
     get_last_crawl_result,
     get_crawl_log,
+    request_crawl_cancel,
 )
 from backend.utils.logging import get_logger
 
@@ -535,5 +536,41 @@ async def get_crawl_status_partial(request: Request):
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
             "log_messages": get_crawl_log(),
+        }
+    )
+
+
+@app.post("/admin/crawl/cancel")
+async def cancel_crawl(request: Request):
+    """
+    Cancel a running crawl via HTMX request.
+
+    Returns the updated status partial for HTMX swap.
+    """
+    if not is_crawl_running():
+        crawl_state = get_crawl_state()
+        return templates.TemplateResponse(
+            request,
+            "admin/_partials/_crawl_status.html",
+            {
+                "is_running": False,
+                "current_source": None,
+                "last_result": crawl_state.last_result,
+                "error": "Kein Crawl läuft.",
+            }
+        )
+
+    # Request cancellation
+    request_crawl_cancel()
+
+    crawl_state = get_crawl_state()
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_crawl_status.html",
+        {
+            "is_running": crawl_state.is_running,
+            "current_source": crawl_state.current_source,
+            "last_result": crawl_state.last_result,
+            "success": "Abbruch angefordert...",
         }
     )
