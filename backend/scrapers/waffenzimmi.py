@@ -95,7 +95,7 @@ async def scrape_waffenzimmi() -> ScraperResults:
 
                     logger.debug(f"{SOURCE_NAME} - {category_url} page {page}: found {page_results} listings")
 
-                    if not _has_next_page(soup):
+                    if not _has_next_page(soup, page):
                         break
 
                     page += 1
@@ -127,22 +127,33 @@ def _find_listing_container(element: Tag) -> Optional[Tag]:
     return element.parent if element.parent else None
 
 
-def _has_next_page(soup: BeautifulSoup) -> bool:
+def _has_next_page(soup: BeautifulSoup, current_page: int) -> bool:
     """Check if there's a next page link in pagination."""
-    # WooCommerce pagination patterns (using :-soup-contains instead of deprecated :contains)
+    # WooCommerce pagination patterns - check for next link in various structures
     next_link = soup.select_one(
         "a.next, "
         "a.page-numbers.next, "
+        "li.next a, "  # li with class next containing a link
         "a[rel='next'], "
         ".woocommerce-pagination a:-soup-contains('→'), "
-        ".woocommerce-pagination a:-soup-contains('Weiter')"
+        ".woocommerce-pagination a:-soup-contains('Weiter'), "
+        ".pagination a:-soup-contains('Weiter')"
     )
     if next_link:
         return True
 
-    # Check for page number links with /page/ pattern
-    pagination_links = soup.select("a.page-numbers[href*='/page/']")
-    return len(pagination_links) > 1
+    # Check for page number links with /page/ pattern that are higher than current page
+    pagination_links = soup.select("a[href*='/page/']")
+    for link in pagination_links:
+        href = link.get("href", "")
+        # Extract page number from URL like /page/2/
+        match = re.search(r"/page/(\d+)/?", str(href))
+        if match:
+            page_num = int(match.group(1))
+            if page_num > current_page:
+                return True
+
+    return False
 
 
 def _parse_listing(listing: Tag) -> Optional[ScraperResult]:

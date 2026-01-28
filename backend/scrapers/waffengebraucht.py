@@ -95,7 +95,7 @@ async def scrape_waffengebraucht() -> ScraperResults:
 
                     logger.debug(f"{SOURCE_NAME} - {category_url} page {page}: found {page_results} listings")
 
-                    if not _has_next_page(soup):
+                    if not _has_next_page(soup, page):
                         break
 
                     page += 1
@@ -127,22 +127,22 @@ def _find_listing_container(element: Tag) -> Optional[Tag]:
     return element.parent if element.parent else None
 
 
-def _has_next_page(soup: BeautifulSoup) -> bool:
+def _has_next_page(soup: BeautifulSoup, current_page: int) -> bool:
     """Check if there's a next page link in pagination."""
     # waffengebraucht.ch pagination uses ?&page= parameter
-    # Look for next page links (using :-soup-contains instead of deprecated :contains)
-    next_link = soup.select_one(
-        "a.next, a[rel='next'], "
-        "a:-soup-contains('»'), a:-soup-contains('Weiter'), a:-soup-contains('Letzte')"
-    )
-    if next_link:
-        href = next_link.get("href", "")
-        if "page=" in str(href):
-            return True
-
-    # Check for pagination with page numbers
+    # Look for any pagination links with page numbers higher than current
     pagination_links = soup.select("a[href*='page=']")
-    return len(pagination_links) > 1
+
+    for link in pagination_links:
+        href = link.get("href", "")
+        # Extract page number from URL
+        match = re.search(r"page=(\d+)", str(href))
+        if match:
+            page_num = int(match.group(1))
+            if page_num > current_page:
+                return True
+
+    return False
 
 
 def _parse_listing(listing: Tag) -> Optional[ScraperResult]:
