@@ -151,8 +151,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Ensure static files directory exists
+STATIC_DIR = FRONTEND_DIR / "public"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+
 # Mount static files with absolute path
-app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "public")), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Templates with absolute path
 templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
