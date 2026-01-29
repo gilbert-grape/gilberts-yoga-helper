@@ -21,18 +21,21 @@ from backend.utils.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://www.waffenzimmi.ch"
-# WooCommerce site uses category-based URLs for firearms
-CATEGORY_URLS = [
-    f"{BASE_URL}/produkt-kategorie/waffen/kurzwaffen-waffen/",
-    f"{BASE_URL}/produkt-kategorie/waffen/langwaffen-waffen/",
-]
+# Site uses search-based scraping - search for each term directly
+# Search URL pattern: /?s={term}, pagination: /page/{N}/?s={term}
 SOURCE_NAME = "waffenzimmi.ch"
-MAX_PAGES = 10  # Reasonable limit to avoid excessive scraping
+MAX_PAGES = 10  # Max pages per search term
 
 
-async def scrape_waffenzimmi() -> ScraperResults:
+async def scrape_waffenzimmi(search_terms: list[str] | None = None) -> ScraperResults:
     """
-    Scrape all listings from waffenzimmi.ch.
+    Scrape listings from waffenzimmi.ch using search.
+
+    This scraper uses the site's search functionality to find relevant listings.
+    If no search_terms are provided, it will fetch them from the database.
+
+    Args:
+        search_terms: Optional list of search terms. If None, fetches from database.
 
     Returns:
         List of ScraperResult dicts with title, price, image_url, link, source.
@@ -40,20 +43,36 @@ async def scrape_waffenzimmi() -> ScraperResults:
     """
     # Import here to avoid circular dependency
     from backend.services.crawler import add_crawl_log
+    from urllib.parse import quote_plus
+
+    # If no search terms provided, get them from the database
+    if search_terms is None:
+        from backend.database import SessionLocal
+        from backend.database.crud import get_active_search_terms
+        with SessionLocal() as session:
+            db_terms = get_active_search_terms(session)
+            search_terms = [t.term for t in db_terms]
+
+    if not search_terms:
+        logger.warning(f"{SOURCE_NAME} - No search terms to search for")
+        return []
 
     results: ScraperResults = []
+    seen_links: set[str] = set()  # Deduplicate results across searches
 
     try:
         async with create_http_client() as client:
-            for category_url in CATEGORY_URLS:
-                # Extract category name from URL for logging
-                category_name = category_url.rstrip("/").split("/")[-1].replace("-waffen", "")
-                add_crawl_log(f"  → Kategorie: {category_name}")
+            for term in search_terms:
+                add_crawl_log(f"  → Suche: '{term}'")
 
                 page = 1
                 while page <= MAX_PAGES:
-                    # WooCommerce pagination uses /page/N/ pattern
-                    url = category_url if page == 1 else f"{category_url}page/{page}/"
+                    # Construct search URL - WooCommerce search pagination
+                    encoded_term = quote_plus(term)
+                    if page == 1:
+                        url = f"{BASE_URL}/?s={encoded_term}"
+                    else:
+                        url = f"{BASE_URL}/page/{page}/?s={encoded_term}"
                     add_crawl_log(f"    Seite {page}...")
 
                     response = await client.get(url)
@@ -61,12 +80,13 @@ async def scrape_waffenzimmi() -> ScraperResults:
 
                     soup = BeautifulSoup(response.text, "lxml")
 
-                    # WooCommerce product listing selectors
+                    # Find all listing items - XStore theme uses various selectors
                     listings = soup.select(
-                        ".products > li, "
+                        ".content-product, "
+                        ".product-grid-item, "
                         "li.product, "
-                        ".product-item, "
-                        "[class*='type-product']"
+                        "[class*='type-product'], "
+                        ".et_product-block"
                     )
 
                     # Fallback: look for links that match product detail pages
@@ -75,7 +95,7 @@ async def scrape_waffenzimmi() -> ScraperResults:
                         if product_links:
                             listings = [_find_listing_container(elem) for elem in product_links]
                             listings = [l for l in listings if l is not None]
-                            # Deduplicate
+                            # Deduplicate by element id
                             seen_ids: set[int] = set()
                             unique_listings = []
                             for listing in listings:
@@ -87,34 +107,35 @@ async def scrape_waffenzimmi() -> ScraperResults:
 
                     if not listings:
                         if page == 1:
-                            logger.warning(f"{SOURCE_NAME} - No listings found on {category_url}, HTML structure may have changed")
+                            add_crawl_log(f"    Keine Ergebnisse für '{term}'")
                         break
 
                     page_results = 0
                     for listing in listings:
                         try:
                             result = _parse_listing(listing)
-                            if result:
+                            if result and result["link"] not in seen_links:
+                                seen_links.add(result["link"])
                                 results.append(result)
                                 page_results += 1
                         except Exception as e:
                             logger.warning(f"{SOURCE_NAME} - Failed to parse listing: {e}")
                             continue
 
-                    logger.debug(f"{SOURCE_NAME} - {category_url} page {page}: found {page_results} listings")
+                    logger.debug(f"{SOURCE_NAME} - Search '{term}' page {page}: found {page_results} new listings")
 
-                    if not _has_next_page(soup, page):
+                    # Check if there's a next page
+                    if not _has_next_page(soup, page) or page_results == 0:
                         break
 
                     page += 1
                     if page <= MAX_PAGES:
                         await delay_between_requests()
 
-                # Delay between categories
-                if category_url != CATEGORY_URLS[-1]:
-                    await delay_between_requests()
+                # Delay between search terms
+                await delay_between_requests()
 
-            logger.info(f"{SOURCE_NAME} - Scraped {len(results)} listings total")
+            logger.info(f"{SOURCE_NAME} - Scraped {len(results)} unique listings total")
 
     except Exception as e:
         logger.error(f"{SOURCE_NAME} - Failed: {e}")
@@ -188,11 +209,14 @@ def _parse_listing(listing: Tag) -> Optional[ScraperResult]:
 
 def _extract_title(listing: Tag) -> Optional[str]:
     """Extract title from listing element."""
-    # WooCommerce title selectors
+    # XStore/WooCommerce title selectors
     title_selectors = [
+        ".product-title a",
+        ".product-title",
         ".woocommerce-loop-product__title",
         "h2.product-title",
         "h3.product-title",
+        ".product-name a",
         ".product-name",
         "h2 a",
         "h3 a",
@@ -204,8 +228,11 @@ def _extract_title(listing: Tag) -> Optional[str]:
     for selector in title_selectors:
         elem = listing.select_one(selector)
         if elem:
-            title = elem.get_text(strip=True)
-            if title:
+            # Try title attribute first (often cleaner)
+            title = elem.get("title", "")
+            if not title:
+                title = elem.get_text(strip=True)
+            if title and len(title) > 2:
                 return title
 
     return None
@@ -275,8 +302,10 @@ def _extract_price(listing: Tag) -> Optional[float]:
 
 def _extract_image_url(listing: Tag) -> Optional[str]:
     """Extract image URL from listing element."""
-    # WooCommerce image selectors
+    # XStore/WooCommerce image selectors
     img_selectors = [
+        ".product-content-image img",
+        ".product-image-wrapper img",
         "img.wp-post-image",
         "img.attachment-woocommerce_thumbnail",
         ".product-image img",
@@ -287,7 +316,8 @@ def _extract_image_url(listing: Tag) -> Optional[str]:
         img_elem = listing.select_one(selector)
         if img_elem:
             # Try different image source attributes (including lazy-load)
-            for attr in ["src", "data-src", "data-lazy-src", "data-original"]:
+            # XStore often uses data-src for lazy loading
+            for attr in ["data-src", "src", "data-lazy-src", "data-original"]:
                 img_url = img_elem.get(attr)
                 if img_url:
                     if isinstance(img_url, list):
@@ -295,7 +325,8 @@ def _extract_image_url(listing: Tag) -> Optional[str]:
                     # Skip placeholder images
                     if ("placeholder" not in img_url.lower() and
                         "blank" not in img_url.lower() and
-                        "xstore-placeholder" not in img_url.lower()):
+                        "xstore-placeholder" not in img_url.lower() and
+                        "data:image" not in img_url.lower()):
                         return make_absolute_url(BASE_URL, img_url)
 
     return None
