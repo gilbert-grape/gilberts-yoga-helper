@@ -53,7 +53,9 @@ def get_or_create_source(session: Session, name: str, base_url: str) -> Source:
     if source:
         return source
 
-    source = Source(name=name, base_url=base_url, is_active=True)
+    # Get the next sort_order value
+    max_order = session.query(Source).count()
+    source = Source(name=name, base_url=base_url, is_active=True, sort_order=max_order)
     session.add(source)
     session.commit()
     session.refresh(source)
