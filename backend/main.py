@@ -74,6 +74,7 @@ from backend.services.crawler import (
     get_crawl_log,
     request_crawl_cancel,
     prepare_crawl_state,
+    ensure_sources_exist,
 )
 from backend.utils.logging import get_logger
 
@@ -147,6 +148,7 @@ async def lifespan(app: FastAPI):
 
     Startup:
         - Verifies database connectivity and migration status
+        - Creates all registered sources if they don't exist
         - Does NOT auto-run migrations (use 'alembic upgrade head' manually)
 
     Shutdown:
@@ -154,6 +156,18 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Verify database (but don't auto-migrate)
     verify_database()
+
+    # Create all registered sources at startup so they're visible immediately
+    from backend.database import SessionLocal
+    db = SessionLocal()
+    try:
+        ensure_sources_exist(db)
+        logger.info("All registered sources initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize sources: {e}")
+    finally:
+        db.close()
+
     yield
     # Shutdown: cleanup if needed (none currently)
 
