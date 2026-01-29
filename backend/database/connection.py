@@ -39,34 +39,20 @@ engine = create_engine(
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
     """
-    Enable WAL mode and set pragmas for better durability and concurrency.
+    Set SQLite pragmas for reliability.
 
-    - WAL mode: Better concurrency for reads during writes
-    - synchronous=NORMAL: Good balance of safety and performance
-    - wal_autocheckpoint=100: Checkpoint more frequently to prevent data loss
+    Using DELETE journal mode instead of WAL for better data durability.
+    WAL mode caused data loss issues when server was restarted.
     """
     cursor = dbapi_connection.cursor()
 
-    # Enable WAL mode
-    cursor.execute("PRAGMA journal_mode=WAL")
-    result = cursor.fetchone()
+    # Use DELETE journal mode (default) - more reliable than WAL for this use case
+    cursor.execute("PRAGMA journal_mode=DELETE")
 
-    # Set synchronous to NORMAL for better durability
-    # (FULL is safest but slower, NORMAL is good balance)
-    cursor.execute("PRAGMA synchronous=NORMAL")
-
-    # Checkpoint more frequently (every 100 pages instead of default 1000)
-    # This reduces data loss risk on unexpected shutdown
-    cursor.execute("PRAGMA wal_autocheckpoint=100")
+    # FULL synchronous mode - ensures all writes are synced to disk
+    cursor.execute("PRAGMA synchronous=FULL")
 
     cursor.close()
-
-    # Verify WAL mode was set correctly
-    if result and result[0] != "wal":
-        logger.warning(
-            f"Failed to enable WAL mode. Got '{result[0]}' instead of 'wal'. "
-            "Database may have reduced concurrency."
-        )
 
 
 # Session factory
