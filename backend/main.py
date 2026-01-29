@@ -73,6 +73,7 @@ from backend.services.crawler import (
     get_last_crawl_result,
     get_crawl_log,
     request_crawl_cancel,
+    prepare_crawl_state,
 )
 from backend.utils.logging import get_logger
 
@@ -676,8 +677,11 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
     """
     Start a manual crawl via HTMX request.
 
-    Returns the updated status partial for HTMX swap.
+    Starts the crawl in the background and returns immediately so the UI
+    can show the running state with cancel button.
     """
+    import asyncio
+
     # Check if already running
     if is_crawl_running():
         crawl_state = get_crawl_state()
@@ -709,35 +713,37 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
             }
         )
 
-    try:
-        # Run the crawl
-        result = await run_crawl_async(db)
+    # Prepare crawl state BEFORE creating background task to avoid race conditions
+    # This ensures polling sees is_running=True immediately
+    prepare_crawl_state()
 
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_crawl_status.html",
-            {
-                "is_running": False,
-                "current_source": None,
-                "last_result": result,
-                "log_messages": get_crawl_log(),
-                "success": "Crawl erfolgreich abgeschlossen.",
-            }
-        )
-    except Exception as e:
-        logger.error(f"Crawl failed: {e}")
-        crawl_state = get_crawl_state()
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_crawl_status.html",
-            {
-                "is_running": False,
-                "current_source": None,
-                "last_result": crawl_state.last_result,
-                "log_messages": get_crawl_log(),
-                "error": f"Crawl fehlgeschlagen: {str(e)}",
-            }
-        )
+    # Start crawl in background task
+    async def run_crawl_background():
+        # Create a new database session for the background task
+        from backend.database import SessionLocal
+        background_db = SessionLocal()
+        try:
+            # Pass state_prepared=True since we already set up the state
+            await run_crawl_async(background_db, state_prepared=True)
+        except Exception as e:
+            logger.error(f"Background crawl failed: {e}")
+        finally:
+            background_db.close()
+
+    asyncio.create_task(run_crawl_background())
+
+    # Return immediately with running state
+    crawl_state = get_crawl_state()
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_crawl_status.html",
+        {
+            "is_running": crawl_state.is_running,
+            "current_source": crawl_state.current_source,
+            "last_result": crawl_state.last_result,
+            "log_messages": get_crawl_log(),
+        }
+    )
 
 
 @app.get("/admin/crawl/status")

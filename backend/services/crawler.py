@@ -171,6 +171,31 @@ def request_crawl_cancel() -> bool:
     return False
 
 
+def prepare_crawl_state() -> bool:
+    """
+    Prepare the crawl state before starting a background crawl.
+
+    This sets is_running=True, clears the log, and adds an initial message.
+    Must be called BEFORE creating the background task to avoid race conditions.
+
+    Returns:
+        True if state was prepared successfully,
+        False if a crawl is already running.
+    """
+    global _crawl_state
+
+    if _crawl_state.is_running:
+        return False
+
+    _crawl_state.is_running = True
+    _crawl_state.cancel_requested = False
+    _crawl_state.current_source = None
+    clear_crawl_log()
+    add_crawl_log("Crawl wird gestartet...")
+
+    return True
+
+
 def is_cancel_requested() -> bool:
     """Check if cancellation has been requested."""
     return _crawl_state.cancel_requested
@@ -225,7 +250,7 @@ async def run_single_scraper(
         return [], error_msg
 
 
-async def run_crawl_async(session: Session) -> CrawlResult:
+async def run_crawl_async(session: Session, state_prepared: bool = False) -> CrawlResult:
     """
     Run complete crawl asynchronously: scrape all active sources, match, and save.
 
@@ -233,28 +258,32 @@ async def run_crawl_async(session: Session) -> CrawlResult:
 
     Args:
         session: Database session
+        state_prepared: If True, assumes prepare_crawl_state() was already called.
+                       This avoids race conditions when starting crawl in background.
 
     Returns:
         CrawlResult with statistics about the crawl
 
     Raises:
-        RuntimeError: If a crawl is already running
+        RuntimeError: If a crawl is already running (and state not prepared)
     """
     global _crawl_state
 
-    # Check if already running
-    if _crawl_state.is_running:
-        raise RuntimeError("A crawl is already running")
+    # If state was not prepared by caller, set it up now
+    if not state_prepared:
+        # Check if already running
+        if _crawl_state.is_running:
+            raise RuntimeError("A crawl is already running")
+
+        # Mark as running, reset cancel flag and clear log
+        _crawl_state.is_running = True
+        _crawl_state.cancel_requested = False
+        _crawl_state.current_source = None
+        clear_crawl_log()
 
     start_time = time.time()
     result = CrawlResult()
     result.started_at = datetime.now(timezone.utc)
-
-    # Mark as running, reset cancel flag and clear log
-    _crawl_state.is_running = True
-    _crawl_state.cancel_requested = False
-    _crawl_state.current_source = None
-    clear_crawl_log()
 
     logger.info("Starting crawl run")
     add_crawl_log("Crawl gestartet")
