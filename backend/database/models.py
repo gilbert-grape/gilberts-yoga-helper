@@ -53,6 +53,27 @@ class TimestampMixin:
     )
 
 
+class ExcludeTerm(TimestampMixin, Base):
+    """
+    Negative keywords to exclude from search results.
+
+    If a listing title contains any of these terms, it will be excluded
+    from the search results even if it matches a search term.
+
+    Attributes:
+        term: The exclusion term text (e.g., "Softair", "Airsoft", "CO2")
+        is_active: Whether this exclusion is active
+    """
+
+    __tablename__ = "exclude_terms"
+
+    term = Column(String(255), nullable=False, unique=True, index=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<ExcludeTerm(id={self.id}, term='{self.term}', is_active={self.is_active})>"
+
+
 class SearchTerm(TimestampMixin, Base):
     """
     User's search terms for finding firearms listings.
@@ -94,6 +115,7 @@ class Source(TimestampMixin, Base):
         name: Display name (e.g., "waffenboerse.ch")
         base_url: Website base URL for the scraper
         is_active: Whether to include in crawls
+        sort_order: Order in which sources are crawled (lower = first)
         last_crawl_at: When the source was last crawled
         last_error: Last error message if crawl failed
     """
@@ -103,6 +125,7 @@ class Source(TimestampMixin, Base):
     name = Column(String(100), nullable=False, unique=True, index=True)
     base_url = Column(String(500), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False)
     last_crawl_at = Column(DateTime, nullable=True)
     last_error = Column(Text, nullable=True)
 

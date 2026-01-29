@@ -12,7 +12,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from backend.database.models import AppSettings, Match, SearchTerm, Source
+from backend.database.models import AppSettings, ExcludeTerm, Match, SearchTerm, Source
 from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -77,28 +77,28 @@ def get_all_sources(session: Session) -> list[Source]:
 
 def get_active_sources(session: Session) -> list[Source]:
     """
-    Get all active sources.
+    Get all active sources sorted by sort_order.
 
     Args:
         session: Database session
 
     Returns:
-        List of active Source records
+        List of active Source records sorted by sort_order
     """
-    return session.query(Source).filter(Source.is_active == True).all()
+    return session.query(Source).filter(Source.is_active == True).order_by(Source.sort_order).all()
 
 
 def get_all_sources_sorted(session: Session) -> list[Source]:
     """
-    Get all sources sorted alphabetically by name.
+    Get all sources sorted by sort_order.
 
     Args:
         session: Database session
 
     Returns:
-        List of all Source records sorted alphabetically
+        List of all Source records sorted by sort_order
     """
-    return session.query(Source).order_by(Source.name).all()
+    return session.query(Source).order_by(Source.sort_order).all()
 
 
 def get_source_by_id(session: Session, source_id: int) -> Optional[Source]:
@@ -188,6 +188,64 @@ def clear_source_error(session: Session, source_id: int) -> Optional[Source]:
 
     logger.info(f"Cleared error for source '{source.name}'")
     return source
+
+
+def move_source_up(session: Session, source_id: int) -> list[Source]:
+    """
+    Move a source up in the sort order (swap with previous source).
+
+    Args:
+        session: Database session
+        source_id: Source ID to move up
+
+    Returns:
+        Updated list of all sources sorted by sort_order
+    """
+    source = get_source_by_id(session, source_id)
+    if not source:
+        return get_all_sources_sorted(session)
+
+    # Find the source with the next lower sort_order
+    prev_source = session.query(Source).filter(
+        Source.sort_order < source.sort_order
+    ).order_by(Source.sort_order.desc()).first()
+
+    if prev_source:
+        # Swap sort_order values
+        source.sort_order, prev_source.sort_order = prev_source.sort_order, source.sort_order
+        session.commit()
+        logger.info(f"Moved source '{source.name}' up")
+
+    return get_all_sources_sorted(session)
+
+
+def move_source_down(session: Session, source_id: int) -> list[Source]:
+    """
+    Move a source down in the sort order (swap with next source).
+
+    Args:
+        session: Database session
+        source_id: Source ID to move down
+
+    Returns:
+        Updated list of all sources sorted by sort_order
+    """
+    source = get_source_by_id(session, source_id)
+    if not source:
+        return get_all_sources_sorted(session)
+
+    # Find the source with the next higher sort_order
+    next_source = session.query(Source).filter(
+        Source.sort_order > source.sort_order
+    ).order_by(Source.sort_order.asc()).first()
+
+    if next_source:
+        # Swap sort_order values
+        source.sort_order, next_source.sort_order = next_source.sort_order, source.sort_order
+        session.commit()
+        logger.info(f"Moved source '{source.name}' down")
+
+    return get_all_sources_sorted(session)
 
 
 # =============================================================================
@@ -436,6 +494,149 @@ def move_search_term_down(session: Session, term_id: int) -> Optional[SearchTerm
     session.refresh(term)
 
     logger.info(f"Moved search term '{term.term}' down")
+    return term
+
+
+# =============================================================================
+# Exclude Term Operations
+# =============================================================================
+
+
+def get_all_exclude_terms(session: Session) -> list[ExcludeTerm]:
+    """
+    Get all exclude terms (active and inactive).
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of all ExcludeTerm records
+    """
+    return session.query(ExcludeTerm).all()
+
+
+def get_all_exclude_terms_sorted(session: Session) -> list[ExcludeTerm]:
+    """
+    Get all exclude terms sorted alphabetically by term.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of all ExcludeTerm records sorted alphabetically
+    """
+    return session.query(ExcludeTerm).order_by(ExcludeTerm.term).all()
+
+
+def get_active_exclude_terms(session: Session) -> list[ExcludeTerm]:
+    """
+    Get all active exclude terms.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of active ExcludeTerm records
+    """
+    return session.query(ExcludeTerm).filter(ExcludeTerm.is_active == True).all()
+
+
+def get_exclude_term_by_id(session: Session, term_id: int) -> Optional[ExcludeTerm]:
+    """
+    Get an exclude term by ID.
+
+    Args:
+        session: Database session
+        term_id: Exclude term ID
+
+    Returns:
+        ExcludeTerm if found, None otherwise
+    """
+    return session.query(ExcludeTerm).filter(ExcludeTerm.id == term_id).first()
+
+
+def get_exclude_term_by_term(session: Session, term: str) -> Optional[ExcludeTerm]:
+    """
+    Get an exclude term by its text (case-insensitive).
+
+    Args:
+        session: Database session
+        term: Exclude term text
+
+    Returns:
+        ExcludeTerm if found, None otherwise
+    """
+    return session.query(ExcludeTerm).filter(
+        ExcludeTerm.term.ilike(term)
+    ).first()
+
+
+def create_exclude_term(
+    session: Session,
+    term: str,
+    is_active: bool = True
+) -> ExcludeTerm:
+    """
+    Create a new exclude term.
+
+    Args:
+        session: Database session
+        term: Exclude term text
+        is_active: Whether term is active
+
+    Returns:
+        Newly created ExcludeTerm
+    """
+    exclude_term = ExcludeTerm(term=term, is_active=is_active)
+    session.add(exclude_term)
+    session.commit()
+    session.refresh(exclude_term)
+    logger.info(f"Created exclude term: {term}")
+    return exclude_term
+
+
+def delete_exclude_term(session: Session, term_id: int) -> bool:
+    """
+    Delete an exclude term by ID.
+
+    Args:
+        session: Database session
+        term_id: Exclude term ID
+
+    Returns:
+        True if deleted, False if not found
+    """
+    term = get_exclude_term_by_id(session, term_id)
+    if not term:
+        return False
+
+    session.delete(term)
+    session.commit()
+    logger.info(f"Deleted exclude term: {term.term}")
+    return True
+
+
+def toggle_exclude_term_active(session: Session, term_id: int) -> Optional[ExcludeTerm]:
+    """
+    Toggle an exclude term's active state.
+
+    Args:
+        session: Database session
+        term_id: Exclude term ID
+
+    Returns:
+        Updated ExcludeTerm, or None if not found
+    """
+    term = get_exclude_term_by_id(session, term_id)
+    if not term:
+        return None
+
+    term.is_active = not term.is_active
+    session.commit()
+    session.refresh(term)
+
+    status = "activated" if term.is_active else "deactivated"
+    logger.info(f"Exclude term '{term.term}' {status}")
     return term
 
 

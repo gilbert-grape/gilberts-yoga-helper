@@ -1,5 +1,48 @@
 {# Single Source Row Partial - used for HTMX row updates #}
 <tr id="source-row-{{ source.id }}">
+    {# Sort Order with Move Buttons #}
+    <td class="px-3 py-4 whitespace-nowrap">
+        <div class="flex items-center gap-1">
+            <span class="text-sm font-medium text-gray-500 w-5 text-center">{{ position|default(source.sort_order + 1) }}</span>
+            <div class="flex flex-col">
+                {# Move Up Button #}
+                <button
+                    {% if not is_first|default(false) %}
+                    hx-patch="/admin/sources/{{ source.id }}/move-up"
+                    hx-target="#sources-list"
+                    hx-swap="innerHTML"
+                    class="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                    {% else %}
+                    disabled
+                    class="p-0.5 text-gray-200 cursor-not-allowed"
+                    {% endif %}
+                    title="Nach oben"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                    </svg>
+                </button>
+                {# Move Down Button #}
+                <button
+                    {% if not is_last|default(false) %}
+                    hx-patch="/admin/sources/{{ source.id }}/move-down"
+                    hx-target="#sources-list"
+                    hx-swap="innerHTML"
+                    class="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                    {% else %}
+                    disabled
+                    class="p-0.5 text-gray-200 cursor-not-allowed"
+                    {% endif %}
+                    title="Nach unten"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </td>
+
     {# Source Name and URL #}
     <td class="px-6 py-4 whitespace-nowrap">
         <div class="flex flex-col">

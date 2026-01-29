@@ -12,6 +12,7 @@ from backend.database.connection import (
 )
 from backend.database.models import (
     AppSettings,
+    ExcludeTerm,
     Match,
     SearchTerm,
     Source,
@@ -28,6 +29,8 @@ from backend.database.crud import (
     toggle_source_active,
     update_source_last_crawl,
     clear_source_error,
+    move_source_up,
+    move_source_down,
     # Search term operations
     get_active_search_terms,
     get_all_search_terms,
@@ -40,6 +43,15 @@ from backend.database.crud import (
     update_search_term_match_type,
     move_search_term_up,
     move_search_term_down,
+    # Exclude term operations
+    get_all_exclude_terms,
+    get_all_exclude_terms_sorted,
+    get_active_exclude_terms,
+    get_exclude_term_by_id,
+    get_exclude_term_by_term,
+    create_exclude_term,
+    delete_exclude_term,
+    toggle_exclude_term_active,
     # Match operations
     get_match_by_url_and_term,
     save_match,
@@ -65,6 +77,7 @@ __all__ = [
     "DATABASE_URL",
     # Models
     "AppSettings",
+    "ExcludeTerm",
     "Match",
     "SearchTerm",
     "Source",
@@ -79,6 +92,8 @@ __all__ = [
     "toggle_source_active",
     "update_source_last_crawl",
     "clear_source_error",
+    "move_source_up",
+    "move_source_down",
     # CRUD - Search Terms
     "get_active_search_terms",
     "get_all_search_terms",
@@ -91,6 +106,15 @@ __all__ = [
     "update_search_term_match_type",
     "move_search_term_up",
     "move_search_term_down",
+    # CRUD - Exclude Terms
+    "get_all_exclude_terms",
+    "get_all_exclude_terms_sorted",
+    "get_active_exclude_terms",
+    "get_exclude_term_by_id",
+    "get_exclude_term_by_term",
+    "create_exclude_term",
+    "delete_exclude_term",
+    "toggle_exclude_term_active",
     # CRUD - Matches
     "get_match_by_url_and_term",
     "save_match",

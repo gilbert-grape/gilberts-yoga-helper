@@ -138,21 +138,51 @@ def matches(title: str, term: str, match_type: str) -> bool:
         return matches_exact(title, term)
 
 
+def contains_exclude_term(title: str, exclude_terms: list[str]) -> bool:
+    """
+    Check if title contains any of the exclude terms (case-insensitive).
+
+    Args:
+        title: Listing title to check
+        exclude_terms: List of terms that should exclude the listing
+
+    Returns:
+        True if any exclude term is found in the title
+
+    Examples:
+        >>> contains_exclude_term("Softair Glock 17", ["Softair", "Airsoft"])
+        True
+        >>> contains_exclude_term("Glock 17 Gen5", ["Softair", "Airsoft"])
+        False
+    """
+    if not title or not exclude_terms:
+        return False
+
+    title_lower = title.lower()
+    for term in exclude_terms:
+        if term.lower() in title_lower:
+            return True
+    return False
+
+
 def find_matches(
     listings: list[dict],
     search_terms: list[dict],
+    exclude_terms: Optional[list[str]] = None,
 ) -> list[MatchResult]:
     """
     Find all matches between listings and search terms.
 
     Each listing is checked against each active search term.
     A listing can match multiple terms and will produce multiple
-    MatchResult entries.
+    MatchResult entries. Listings containing exclude terms are filtered out.
 
     Args:
         listings: List of scraped listing dicts with at least 'title' field
         search_terms: List of search term dicts with 'id', 'term', 'match_type',
                      and optionally 'is_active' fields
+        exclude_terms: Optional list of terms that exclude a listing if found
+                      in its title (case-insensitive)
 
     Returns:
         List of MatchResult dicts, one for each listing-term match.
@@ -182,9 +212,16 @@ def find_matches(
     if not active_terms:
         return results
 
+    # Normalize exclude_terms to empty list if None
+    exclude_list = exclude_terms or []
+
     for listing in listings:
         title = listing.get("title", "")
         if not title:
+            continue
+
+        # Skip listings that contain exclude terms
+        if contains_exclude_term(title, exclude_list):
             continue
 
         for term_data in active_terms:

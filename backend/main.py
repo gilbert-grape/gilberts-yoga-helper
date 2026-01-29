@@ -53,9 +53,17 @@ from backend.database import (
     get_source_by_id,
     toggle_source_active,
     clear_source_error,
+    move_source_up,
+    move_source_down,
     get_matches_by_search_term,
     get_new_match_count,
     mark_matches_as_seen,
+    get_all_exclude_terms_sorted,
+    get_exclude_term_by_id,
+    get_exclude_term_by_term,
+    create_exclude_term,
+    delete_exclude_term,
+    toggle_exclude_term_active,
     DATABASE_PATH,
 )
 from backend.services.crawler import (
@@ -399,6 +407,135 @@ async def move_term_down(
     )
 
 
+# =============================================================================
+# Exclude Terms Admin Routes
+# =============================================================================
+
+
+@app.get("/admin/exclude-terms")
+async def admin_exclude_terms(request: Request, db: Session = Depends(get_db)):
+    """
+    Admin page for managing exclude terms (negative keywords).
+
+    Displays all exclude terms sorted alphabetically with options to:
+    - Add new exclude terms
+    - Delete existing exclude terms
+    - Toggle active state
+    """
+    exclude_terms = get_all_exclude_terms_sorted(db)
+    return templates.TemplateResponse(
+        request,
+        "admin/exclude_terms.html",
+        {
+            "title": "Ausschlüsse",
+            "exclude_terms": exclude_terms,
+        }
+    )
+
+
+@app.post("/admin/exclude-terms")
+async def add_exclude_term(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new exclude term via HTMX form submission.
+
+    Returns the updated exclude terms list partial for HTMX swap.
+    """
+    form = await request.form()
+    term_text = form.get("term", "").strip()
+
+    error = None
+
+    # Validation
+    if not term_text:
+        error = "Ausschlussbegriff darf nicht leer sein."
+    elif get_exclude_term_by_term(db, term_text):
+        error = f"Ausschlussbegriff '{term_text}' existiert bereits."
+
+    if error:
+        exclude_terms = get_all_exclude_terms_sorted(db)
+        return templates.TemplateResponse(
+            request,
+            "admin/_partials/_exclude_terms_list.html",
+            {
+                "exclude_terms": exclude_terms,
+                "error": error,
+            }
+        )
+
+    # Create the new exclude term
+    create_exclude_term(db, term_text)
+    exclude_terms = get_all_exclude_terms_sorted(db)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_exclude_terms_list.html",
+        {
+            "exclude_terms": exclude_terms,
+            "success": f"Ausschlussbegriff '{term_text}' hinzugefügt.",
+        }
+    )
+
+
+@app.delete("/admin/exclude-terms/{term_id}")
+async def remove_exclude_term(
+    request: Request,
+    term_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete an exclude term via HTMX request.
+
+    Returns the updated exclude terms list partial for HTMX swap.
+    """
+    term = get_exclude_term_by_id(db, term_id)
+    term_text = term.term if term else "Unbekannt"
+
+    success = delete_exclude_term(db, term_id)
+    exclude_terms = get_all_exclude_terms_sorted(db)
+
+    message = None
+    if success:
+        message = f"Ausschlussbegriff '{term_text}' gelöscht."
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_exclude_terms_list.html",
+        {
+            "exclude_terms": exclude_terms,
+            "success": message,
+        }
+    )
+
+
+@app.patch("/admin/exclude-terms/{term_id}/toggle")
+async def toggle_exclude_term(
+    request: Request,
+    term_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Toggle an exclude term's active state via HTMX request.
+
+    Returns the updated exclude term row partial for HTMX swap.
+    """
+    term = toggle_exclude_term_active(db, term_id)
+    if not term:
+        return templates.TemplateResponse(
+            request,
+            "admin/_partials/_exclude_term_row.html",
+            {"term": None, "error": "Ausschlussbegriff nicht gefunden."}
+        )
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_exclude_term_row.html",
+        {"term": term}
+    )
+
+
 @app.get("/admin/sources")
 async def admin_sources(request: Request, db: Session = Depends(get_db)):
     """
@@ -469,6 +606,44 @@ async def clear_source_error_route(
         request,
         "admin/_partials/_source_row.html",
         {"source": source}
+    )
+
+
+@app.patch("/admin/sources/{source_id}/move-up")
+async def move_source_up_route(
+    request: Request,
+    source_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Move a source up in the crawl order via HTMX request.
+
+    Returns the updated sources list partial for HTMX swap.
+    """
+    sources = move_source_up(db, source_id)
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_sources_list.html",
+        {"sources": sources}
+    )
+
+
+@app.patch("/admin/sources/{source_id}/move-down")
+async def move_source_down_route(
+    request: Request,
+    source_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Move a source down in the crawl order via HTMX request.
+
+    Returns the updated sources list partial for HTMX swap.
+    """
+    sources = move_source_down(db, source_id)
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_sources_list.html",
+        {"sources": sources}
     )
 
 

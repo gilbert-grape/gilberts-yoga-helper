@@ -1,0 +1,61 @@
+{% extends "_base.html" %}
+
+{% block title %}Ausschlüsse{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Ausschlussbegriffe verwalten</h1>
+    <p class="text-gray-600">Inserate mit diesen Begriffen im Titel werden ausgeschlossen (z.B. Softair, Airsoft, CO2)</p>
+</div>
+
+{# Add new exclude term form #}
+<div class="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Neuen Ausschlussbegriff hinzufügen</h2>
+    <form
+        hx-post="/admin/exclude-terms"
+        hx-target="#exclude-terms-list"
+        hx-swap="innerHTML"
+        class="flex flex-col sm:flex-row gap-4"
+    >
+        <div class="flex-1">
+            <label for="term" class="sr-only">Ausschlussbegriff</label>
+            <input
+                type="text"
+                name="term"
+                id="term"
+                placeholder="z.B. Softair, Airsoft, CO2"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                required
+            >
+        </div>
+        <button
+            type="submit"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Hinzufügen
+        </button>
+    </form>
+</div>
+
+{# Exclude terms list container for HTMX updates #}
+<div id="exclude-terms-list">
+    {% include "admin/_partials/_exclude_terms_list.html" %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Clear input after successful form submission
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'exclude-terms-list') {
+            const form = document.querySelector('form[hx-post="/admin/exclude-terms"]');
+            if (form) {
+                form.reset();
+            }
+        }
+    });
+</script>
+{% endblock %}
