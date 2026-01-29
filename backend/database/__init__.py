@@ -50,6 +50,7 @@ from backend.database.crud import (
     get_exclude_term_by_id,
     get_exclude_term_by_term,
     create_exclude_term,
+    ensure_default_exclude_terms,
     delete_exclude_term,
     toggle_exclude_term_active,
     # Match operations
@@ -113,6 +114,7 @@ __all__ = [
     "get_exclude_term_by_id",
     "get_exclude_term_by_term",
     "create_exclude_term",
+    "ensure_default_exclude_terms",
     "delete_exclude_term",
     "toggle_exclude_term_active",
     # CRUD - Matches

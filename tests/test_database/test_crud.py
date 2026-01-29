@@ -11,22 +11,48 @@ Tests verify:
 import pytest
 
 from backend.database.crud import (
+    clear_source_error,
+    create_exclude_term,
     create_search_term,
+    delete_exclude_term,
+    delete_search_term,
+    get_active_exclude_terms,
     get_active_search_terms,
     get_active_sources,
+    get_all_exclude_terms,
+    get_all_exclude_terms_sorted,
     get_all_matches,
     get_all_search_terms,
+    get_all_search_terms_sorted,
     get_all_sources,
+    get_all_sources_sorted,
+    get_app_settings,
+    get_exclude_term_by_id,
+    get_exclude_term_by_term,
+    get_last_seen_at,
     get_match_by_url_and_term,
     get_matches_by_search_term,
+    get_new_match_count,
     get_new_matches,
     get_or_create_source,
+    get_search_term_by_id,
+    get_search_term_by_term,
+    get_source_by_id,
     get_source_by_name,
+    mark_matches_as_seen,
+    move_search_term_down,
+    move_search_term_up,
+    move_source_down,
+    move_source_up,
     save_match,
     save_matches,
     search_term_to_dict,
+    toggle_exclude_term_active,
+    toggle_source_active,
+    update_search_term_match_type,
+    update_source_last_crawl,
 )
-from backend.database.models import Match, SearchTerm, Source
+from backend.database.models import AppSettings, ExcludeTerm, Match, SearchTerm, Source
 
 
 class TestSourceOperations:
@@ -589,3 +615,462 @@ class TestMatchQueries:
         assert len(results) == 2
         for match in results:
             assert match.is_new is True
+
+
+class TestSourceAdvancedOperations:
+    """Tests for advanced source operations."""
+
+    def test_get_source_by_id(self, test_session):
+        """get_source_by_id returns source if exists."""
+        source = Source(name="test.ch", base_url="https://test.ch")
+        test_session.add(source)
+        test_session.commit()
+
+        result = get_source_by_id(test_session, source.id)
+        assert result is not None
+        assert result.name == "test.ch"
+
+    def test_get_source_by_id_returns_none(self, test_session):
+        """get_source_by_id returns None for nonexistent id."""
+        result = get_source_by_id(test_session, 9999)
+        assert result is None
+
+    def test_toggle_source_active(self, test_session):
+        """toggle_source_active toggles is_active state."""
+        source = Source(name="test.ch", base_url="https://test.ch", is_active=True)
+        test_session.add(source)
+        test_session.commit()
+
+        result = toggle_source_active(test_session, source.id)
+        assert result.is_active is False
+
+        result = toggle_source_active(test_session, source.id)
+        assert result.is_active is True
+
+    def test_toggle_source_active_nonexistent(self, test_session):
+        """toggle_source_active returns None for nonexistent source."""
+        result = toggle_source_active(test_session, 9999)
+        assert result is None
+
+    def test_update_source_last_crawl(self, test_session):
+        """update_source_last_crawl updates timestamp."""
+        source = Source(name="test.ch", base_url="https://test.ch")
+        test_session.add(source)
+        test_session.commit()
+        assert source.last_crawl_at is None
+
+        result = update_source_last_crawl(test_session, source.id)
+        assert result.last_crawl_at is not None
+
+    def test_update_source_last_crawl_with_error(self, test_session):
+        """update_source_last_crawl sets error message."""
+        source = Source(name="test.ch", base_url="https://test.ch")
+        test_session.add(source)
+        test_session.commit()
+
+        result = update_source_last_crawl(test_session, source.id, error="Connection failed")
+        assert result.last_error == "Connection failed"
+
+    def test_update_source_last_crawl_nonexistent(self, test_session):
+        """update_source_last_crawl returns None for nonexistent source."""
+        result = update_source_last_crawl(test_session, 9999)
+        assert result is None
+
+    def test_clear_source_error(self, test_session):
+        """clear_source_error clears error message."""
+        source = Source(name="test.ch", base_url="https://test.ch", last_error="Old error")
+        test_session.add(source)
+        test_session.commit()
+
+        result = clear_source_error(test_session, source.id)
+        assert result.last_error is None
+
+    def test_clear_source_error_nonexistent(self, test_session):
+        """clear_source_error returns None for nonexistent source."""
+        result = clear_source_error(test_session, 9999)
+        assert result is None
+
+    def test_get_all_sources_sorted(self, test_session):
+        """get_all_sources_sorted returns sources in sort_order."""
+        source1 = Source(name="z.ch", base_url="https://z.ch", sort_order=2)
+        source2 = Source(name="a.ch", base_url="https://a.ch", sort_order=0)
+        source3 = Source(name="m.ch", base_url="https://m.ch", sort_order=1)
+        test_session.add_all([source1, source2, source3])
+        test_session.commit()
+
+        results = get_all_sources_sorted(test_session)
+        assert len(results) == 3
+        assert results[0].name == "a.ch"
+        assert results[1].name == "m.ch"
+        assert results[2].name == "z.ch"
+
+    def test_move_source_up(self, test_session):
+        """move_source_up swaps sort_order with previous source."""
+        source1 = Source(name="first.ch", base_url="https://first.ch", sort_order=0)
+        source2 = Source(name="second.ch", base_url="https://second.ch", sort_order=1)
+        test_session.add_all([source1, source2])
+        test_session.commit()
+
+        results = move_source_up(test_session, source2.id)
+        assert results[0].name == "second.ch"
+        assert results[1].name == "first.ch"
+
+    def test_move_source_up_nonexistent(self, test_session):
+        """move_source_up returns current list for nonexistent source."""
+        source = Source(name="test.ch", base_url="https://test.ch", sort_order=0)
+        test_session.add(source)
+        test_session.commit()
+
+        results = move_source_up(test_session, 9999)
+        assert len(results) == 1
+
+    def test_move_source_up_already_first(self, test_session):
+        """move_source_up does nothing when already first."""
+        source = Source(name="test.ch", base_url="https://test.ch", sort_order=0)
+        test_session.add(source)
+        test_session.commit()
+
+        results = move_source_up(test_session, source.id)
+        assert results[0].sort_order == 0
+
+    def test_move_source_down(self, test_session):
+        """move_source_down swaps sort_order with next source."""
+        source1 = Source(name="first.ch", base_url="https://first.ch", sort_order=0)
+        source2 = Source(name="second.ch", base_url="https://second.ch", sort_order=1)
+        test_session.add_all([source1, source2])
+        test_session.commit()
+
+        results = move_source_down(test_session, source1.id)
+        assert results[0].name == "second.ch"
+        assert results[1].name == "first.ch"
+
+    def test_move_source_down_nonexistent(self, test_session):
+        """move_source_down returns current list for nonexistent source."""
+        source = Source(name="test.ch", base_url="https://test.ch", sort_order=0)
+        test_session.add(source)
+        test_session.commit()
+
+        results = move_source_down(test_session, 9999)
+        assert len(results) == 1
+
+    def test_move_source_down_already_last(self, test_session):
+        """move_source_down does nothing when already last."""
+        source = Source(name="test.ch", base_url="https://test.ch", sort_order=0)
+        test_session.add(source)
+        test_session.commit()
+
+        results = move_source_down(test_session, source.id)
+        assert results[0].sort_order == 0
+
+
+class TestSearchTermAdvancedOperations:
+    """Tests for advanced search term operations."""
+
+    def test_get_all_search_terms_sorted(self, test_session):
+        """get_all_search_terms_sorted returns terms alphabetically."""
+        test_session.add(SearchTerm(term="Zebra", sort_order=0))
+        test_session.add(SearchTerm(term="Apple", sort_order=1))
+        test_session.add(SearchTerm(term="Mango", sort_order=2))
+        test_session.commit()
+
+        results = get_all_search_terms_sorted(test_session)
+        assert results[0].term == "Apple"
+        assert results[1].term == "Mango"
+        assert results[2].term == "Zebra"
+
+    def test_get_search_term_by_id(self, test_session):
+        """get_search_term_by_id returns term if exists."""
+        term = SearchTerm(term="Glock")
+        test_session.add(term)
+        test_session.commit()
+
+        result = get_search_term_by_id(test_session, term.id)
+        assert result.term == "Glock"
+
+    def test_get_search_term_by_id_nonexistent(self, test_session):
+        """get_search_term_by_id returns None for nonexistent id."""
+        result = get_search_term_by_id(test_session, 9999)
+        assert result is None
+
+    def test_get_search_term_by_term(self, test_session):
+        """get_search_term_by_term finds by text (case-insensitive)."""
+        test_session.add(SearchTerm(term="Glock 17"))
+        test_session.commit()
+
+        result = get_search_term_by_term(test_session, "glock 17")
+        assert result is not None
+        assert result.term == "Glock 17"
+
+    def test_get_search_term_by_term_not_found(self, test_session):
+        """get_search_term_by_term returns None if not found."""
+        result = get_search_term_by_term(test_session, "nonexistent")
+        assert result is None
+
+    def test_delete_search_term(self, test_session):
+        """delete_search_term removes term from database."""
+        term = SearchTerm(term="ToDelete")
+        test_session.add(term)
+        test_session.commit()
+        term_id = term.id
+
+        result = delete_search_term(test_session, term_id)
+        assert result is True
+        assert get_search_term_by_id(test_session, term_id) is None
+
+    def test_delete_search_term_nonexistent(self, test_session):
+        """delete_search_term returns False for nonexistent term."""
+        result = delete_search_term(test_session, 9999)
+        assert result is False
+
+    def test_update_search_term_match_type(self, test_session):
+        """update_search_term_match_type changes match type."""
+        term = SearchTerm(term="Test", match_type="exact")
+        test_session.add(term)
+        test_session.commit()
+
+        result = update_search_term_match_type(test_session, term.id, "similar")
+        assert result.match_type == "similar"
+
+    def test_update_search_term_match_type_invalid(self, test_session):
+        """update_search_term_match_type raises for invalid type."""
+        term = SearchTerm(term="Test", match_type="exact")
+        test_session.add(term)
+        test_session.commit()
+
+        with pytest.raises(ValueError):
+            update_search_term_match_type(test_session, term.id, "invalid")
+
+    def test_update_search_term_match_type_nonexistent(self, test_session):
+        """update_search_term_match_type returns None for nonexistent term."""
+        result = update_search_term_match_type(test_session, 9999, "similar")
+        assert result is None
+
+    def test_move_search_term_up(self, test_session):
+        """move_search_term_up swaps with previous term."""
+        term1 = SearchTerm(term="First", sort_order=0)
+        term2 = SearchTerm(term="Second", sort_order=1)
+        test_session.add_all([term1, term2])
+        test_session.commit()
+
+        result = move_search_term_up(test_session, term2.id)
+        assert result.sort_order == 0
+
+    def test_move_search_term_up_nonexistent(self, test_session):
+        """move_search_term_up returns None for nonexistent term."""
+        result = move_search_term_up(test_session, 9999)
+        assert result is None
+
+    def test_move_search_term_up_already_top(self, test_session):
+        """move_search_term_up does nothing when at top."""
+        term = SearchTerm(term="First", sort_order=0)
+        test_session.add(term)
+        test_session.commit()
+
+        result = move_search_term_up(test_session, term.id)
+        assert result.sort_order == 0
+
+    def test_move_search_term_down(self, test_session):
+        """move_search_term_down swaps with next term."""
+        term1 = SearchTerm(term="First", sort_order=0)
+        term2 = SearchTerm(term="Second", sort_order=1)
+        test_session.add_all([term1, term2])
+        test_session.commit()
+
+        result = move_search_term_down(test_session, term1.id)
+        assert result.sort_order == 1
+
+    def test_move_search_term_down_nonexistent(self, test_session):
+        """move_search_term_down returns None for nonexistent term."""
+        result = move_search_term_down(test_session, 9999)
+        assert result is None
+
+    def test_move_search_term_down_already_bottom(self, test_session):
+        """move_search_term_down does nothing when at bottom."""
+        term = SearchTerm(term="Only", sort_order=0)
+        test_session.add(term)
+        test_session.commit()
+
+        result = move_search_term_down(test_session, term.id)
+        assert result.sort_order == 0
+
+
+class TestExcludeTermOperations:
+    """Tests for exclude term CRUD operations."""
+
+    def test_get_all_exclude_terms(self, test_session):
+        """get_all_exclude_terms returns all terms."""
+        test_session.add(ExcludeTerm(term="Softair", is_active=True))
+        test_session.add(ExcludeTerm(term="Spielzeug", is_active=False))
+        test_session.commit()
+
+        results = get_all_exclude_terms(test_session)
+        assert len(results) == 2
+
+    def test_get_all_exclude_terms_sorted(self, test_session):
+        """get_all_exclude_terms_sorted returns alphabetically."""
+        test_session.add(ExcludeTerm(term="Zebra"))
+        test_session.add(ExcludeTerm(term="Apple"))
+        test_session.commit()
+
+        results = get_all_exclude_terms_sorted(test_session)
+        assert results[0].term == "Apple"
+        assert results[1].term == "Zebra"
+
+    def test_get_active_exclude_terms(self, test_session):
+        """get_active_exclude_terms returns only active terms."""
+        test_session.add(ExcludeTerm(term="Active", is_active=True))
+        test_session.add(ExcludeTerm(term="Inactive", is_active=False))
+        test_session.commit()
+
+        results = get_active_exclude_terms(test_session)
+        assert len(results) == 1
+        assert results[0].term == "Active"
+
+    def test_get_exclude_term_by_id(self, test_session):
+        """get_exclude_term_by_id returns term if exists."""
+        term = ExcludeTerm(term="Test")
+        test_session.add(term)
+        test_session.commit()
+
+        result = get_exclude_term_by_id(test_session, term.id)
+        assert result.term == "Test"
+
+    def test_get_exclude_term_by_id_nonexistent(self, test_session):
+        """get_exclude_term_by_id returns None for nonexistent id."""
+        result = get_exclude_term_by_id(test_session, 9999)
+        assert result is None
+
+    def test_get_exclude_term_by_term(self, test_session):
+        """get_exclude_term_by_term finds by text (case-insensitive)."""
+        test_session.add(ExcludeTerm(term="Softair"))
+        test_session.commit()
+
+        result = get_exclude_term_by_term(test_session, "SOFTAIR")
+        assert result is not None
+        assert result.term == "Softair"
+
+    def test_get_exclude_term_by_term_not_found(self, test_session):
+        """get_exclude_term_by_term returns None if not found."""
+        result = get_exclude_term_by_term(test_session, "nonexistent")
+        assert result is None
+
+    def test_create_exclude_term(self, test_session):
+        """create_exclude_term creates new term."""
+        term = create_exclude_term(test_session, "NewTerm")
+
+        assert term.id is not None
+        assert term.term == "NewTerm"
+        assert term.is_active is True
+
+    def test_create_exclude_term_inactive(self, test_session):
+        """create_exclude_term can create inactive term."""
+        term = create_exclude_term(test_session, "Inactive", is_active=False)
+
+        assert term.is_active is False
+
+    def test_delete_exclude_term(self, test_session):
+        """delete_exclude_term removes term."""
+        term = ExcludeTerm(term="ToDelete")
+        test_session.add(term)
+        test_session.commit()
+        term_id = term.id
+
+        result = delete_exclude_term(test_session, term_id)
+        assert result is True
+        assert get_exclude_term_by_id(test_session, term_id) is None
+
+    def test_delete_exclude_term_nonexistent(self, test_session):
+        """delete_exclude_term returns False for nonexistent term."""
+        result = delete_exclude_term(test_session, 9999)
+        assert result is False
+
+    def test_toggle_exclude_term_active(self, test_session):
+        """toggle_exclude_term_active toggles is_active state."""
+        term = ExcludeTerm(term="Test", is_active=True)
+        test_session.add(term)
+        test_session.commit()
+
+        result = toggle_exclude_term_active(test_session, term.id)
+        assert result.is_active is False
+
+        result = toggle_exclude_term_active(test_session, term.id)
+        assert result.is_active is True
+
+    def test_toggle_exclude_term_active_nonexistent(self, test_session):
+        """toggle_exclude_term_active returns None for nonexistent term."""
+        result = toggle_exclude_term_active(test_session, 9999)
+        assert result is None
+
+
+class TestAppSettingsAndNewMatchDetection:
+    """Tests for app settings and new match detection."""
+
+    def test_get_app_settings_creates_default(self, test_session):
+        """get_app_settings creates default settings if not exists."""
+        settings = get_app_settings(test_session)
+
+        assert settings is not None
+        assert settings.last_seen_at is None
+
+    def test_get_app_settings_returns_existing(self, test_session):
+        """get_app_settings returns existing settings."""
+        # Create settings
+        settings1 = get_app_settings(test_session)
+        settings1_id = settings1.id
+
+        # Get again
+        settings2 = get_app_settings(test_session)
+        assert settings2.id == settings1_id
+
+    def test_mark_matches_as_seen(self, test_session):
+        """mark_matches_as_seen sets is_new to False."""
+        source = Source(name="test.ch", base_url="https://test.ch")
+        term = SearchTerm(term="Test")
+        test_session.add_all([source, term])
+        test_session.commit()
+
+        match1 = Match(source_id=source.id, search_term_id=term.id, title="M1", url="http://1", is_new=True)
+        match2 = Match(source_id=source.id, search_term_id=term.id, title="M2", url="http://2", is_new=True)
+        test_session.add_all([match1, match2])
+        test_session.commit()
+
+        count = mark_matches_as_seen(test_session)
+        assert count == 2
+
+        # Verify matches are no longer new
+        new_matches = get_new_matches(test_session)
+        assert len(new_matches) == 0
+
+    def test_mark_matches_as_seen_updates_timestamp(self, test_session):
+        """mark_matches_as_seen updates last_seen_at."""
+        mark_matches_as_seen(test_session)
+
+        settings = get_app_settings(test_session)
+        assert settings.last_seen_at is not None
+
+    def test_get_last_seen_at(self, test_session):
+        """get_last_seen_at returns timestamp."""
+        # Initially None
+        result = get_last_seen_at(test_session)
+        assert result is None
+
+        # After marking as seen
+        mark_matches_as_seen(test_session)
+        result = get_last_seen_at(test_session)
+        assert result is not None
+
+    def test_get_new_match_count(self, test_session):
+        """get_new_match_count returns count of new matches."""
+        source = Source(name="test.ch", base_url="https://test.ch")
+        term = SearchTerm(term="Test")
+        test_session.add_all([source, term])
+        test_session.commit()
+
+        match1 = Match(source_id=source.id, search_term_id=term.id, title="M1", url="http://1", is_new=True)
+        match2 = Match(source_id=source.id, search_term_id=term.id, title="M2", url="http://2", is_new=False)
+        match3 = Match(source_id=source.id, search_term_id=term.id, title="M3", url="http://3", is_new=True)
+        test_session.add_all([match1, match2, match3])
+        test_session.commit()
+
+        count = get_new_match_count(test_session)
+        assert count == 2

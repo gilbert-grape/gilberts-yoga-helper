@@ -157,14 +157,16 @@ async def lifespan(app: FastAPI):
     # Startup: Verify database (but don't auto-migrate)
     verify_database()
 
-    # Create all registered sources at startup so they're visible immediately
-    from backend.database import SessionLocal
+    # Create all registered sources and default exclude terms at startup
+    from backend.database import SessionLocal, ensure_default_exclude_terms
     db = SessionLocal()
     try:
         ensure_sources_exist(db)
         logger.info("All registered sources initialized")
+        ensure_default_exclude_terms(db)
+        logger.info("Default exclude terms initialized")
     except Exception as e:
-        logger.error(f"Failed to initialize sources: {e}")
+        logger.error(f"Failed to initialize startup data: {e}")
     finally:
         db.close()
 

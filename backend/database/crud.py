@@ -597,6 +597,35 @@ def create_exclude_term(
     return exclude_term
 
 
+# Default exclude terms to create at startup
+DEFAULT_EXCLUDE_TERMS = ["CO2", "Airsoft", "Softair"]
+
+
+def ensure_default_exclude_terms(session: Session) -> list[ExcludeTerm]:
+    """
+    Ensure default exclude terms exist in the database.
+
+    Creates any missing default exclude terms. Existing terms are not modified.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of all exclude terms (including newly created ones)
+    """
+    created_count = 0
+    for term in DEFAULT_EXCLUDE_TERMS:
+        existing = get_exclude_term_by_term(session, term)
+        if not existing:
+            create_exclude_term(session, term)
+            created_count += 1
+
+    if created_count > 0:
+        logger.info(f"Created {created_count} default exclude terms")
+
+    return get_all_exclude_terms_sorted(session)
+
+
 def delete_exclude_term(session: Session, term_id: int) -> bool:
     """
     Delete an exclude term by ID.

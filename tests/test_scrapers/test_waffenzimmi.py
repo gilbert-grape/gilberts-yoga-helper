@@ -17,7 +17,6 @@ import pytest
 
 from backend.scrapers.waffenzimmi import (
     BASE_URL,
-    CATEGORY_URLS,
     SOURCE_NAME,
     scrape_waffenzimmi,
     _extract_image_url,
@@ -458,8 +457,8 @@ class TestScrapeWaffenzimmi:
         assert results[0]["price"] == 750.0
 
     @pytest.mark.asyncio
-    async def test_scrapes_multiple_categories(self):
-        """Test that scraper fetches from multiple category URLs."""
+    async def test_scrapes_with_search_terms(self):
+        """Test that scraper fetches search results for each term."""
         mock_response = MagicMock()
         mock_response.text = SAMPLE_HTML_SINGLE_LISTING
         mock_response.raise_for_status = MagicMock()
@@ -469,12 +468,13 @@ class TestScrapeWaffenzimmi:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
+        search_terms = ["Glock", "SIG"]
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                await scrape_waffenzimmi()
+                await scrape_waffenzimmi(search_terms=search_terms)
 
-        # Should have been called at least once per category
-        assert mock_client.get.call_count >= len(CATEGORY_URLS)
+        # Should have been called at least once per search term
+        assert mock_client.get.call_count >= len(search_terms)
 
     @pytest.mark.asyncio
     async def test_pagination_scrapes_multiple_pages(self):
@@ -740,12 +740,12 @@ class TestHasNextPage:
     def test_detects_pagination_with_next_link(self):
         """Detect pagination via next class link."""
         soup = BeautifulSoup(SAMPLE_HTML_WITH_PAGINATION, "lxml")
-        assert _has_next_page(soup) is True
+        assert _has_next_page(soup, current_page=1) is True
 
     def test_returns_false_for_no_pagination(self):
         """Return False when no pagination found."""
         soup = BeautifulSoup(SAMPLE_HTML_NO_LISTINGS, "lxml")
-        assert _has_next_page(soup) is False
+        assert _has_next_page(soup, current_page=1) is False
 
     def test_detects_weiter_link(self):
         """Detect pagination via 'Weiter' (Next) link."""
@@ -757,7 +757,7 @@ class TestHasNextPage:
         </body></html>
         """
         soup = BeautifulSoup(html, "lxml")
-        assert _has_next_page(soup) is True
+        assert _has_next_page(soup, current_page=1) is True
 
     def test_detects_page_number_links(self):
         """Detect pagination via page number links."""
@@ -770,7 +770,20 @@ class TestHasNextPage:
         </body></html>
         """
         soup = BeautifulSoup(html, "lxml")
-        assert _has_next_page(soup) is True
+        assert _has_next_page(soup, current_page=1) is True
+
+    def test_returns_false_when_on_last_page(self):
+        """Return False when current_page equals max page."""
+        html = """
+        <html><body>
+            <nav class="woocommerce-pagination">
+                <a class="page-numbers" href="/page/1/">1</a>
+                <a class="page-numbers" href="/page/2/">2</a>
+            </nav>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        assert _has_next_page(soup, current_page=2) is False
 
 
 class TestParseListing:

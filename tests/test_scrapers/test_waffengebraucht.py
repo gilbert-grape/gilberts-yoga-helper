@@ -17,7 +17,6 @@ import pytest
 
 from backend.scrapers.waffengebraucht import (
     BASE_URL,
-    CATEGORY_URLS,
     SOURCE_NAME,
     scrape_waffengebraucht,
     _extract_image_url,
@@ -421,8 +420,8 @@ class TestScrapeWaffengebraucht:
         assert results[0]["price"] == 1550.0
 
     @pytest.mark.asyncio
-    async def test_scrapes_multiple_categories(self):
-        """Test that scraper fetches from multiple category URLs."""
+    async def test_scrapes_with_search_terms(self):
+        """Test that scraper fetches search results for each term."""
         mock_response = MagicMock()
         mock_response.text = SAMPLE_HTML_SINGLE_LISTING
         mock_response.raise_for_status = MagicMock()
@@ -432,12 +431,13 @@ class TestScrapeWaffengebraucht:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
+        search_terms = ["Glock", "SIG"]
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                await scrape_waffengebraucht()
+                await scrape_waffengebraucht(search_terms=search_terms)
 
-        # Should have been called at least once per category
-        assert mock_client.get.call_count >= len(CATEGORY_URLS)
+        # Should have been called at least once per search term
+        assert mock_client.get.call_count >= len(search_terms)
 
     @pytest.mark.asyncio
     async def test_pagination_scrapes_multiple_pages(self):
@@ -668,12 +668,12 @@ class TestHasNextPage:
     def test_detects_pagination_with_page_links(self):
         """Detect pagination with page parameter links."""
         soup = BeautifulSoup(SAMPLE_HTML_WITH_PAGINATION, "lxml")
-        assert _has_next_page(soup) is True
+        assert _has_next_page(soup, current_page=1) is True
 
     def test_returns_false_for_no_pagination(self):
         """Return False when no pagination found."""
         soup = BeautifulSoup(SAMPLE_HTML_NO_LISTINGS, "lxml")
-        assert _has_next_page(soup) is False
+        assert _has_next_page(soup, current_page=1) is False
 
     def test_detects_letzte_link(self):
         """Detect pagination via 'Letzte' (Last) link."""
@@ -683,7 +683,20 @@ class TestHasNextPage:
         </body></html>
         """
         soup = BeautifulSoup(html, "lxml")
-        assert _has_next_page(soup) is True
+        assert _has_next_page(soup, current_page=1) is True
+
+    def test_returns_false_when_on_last_page(self):
+        """Return False when current_page equals max page."""
+        html = """
+        <html><body>
+            <div class="pagination">
+                <a href="?page=1">1</a>
+                <a href="?page=2">2</a>
+            </div>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        assert _has_next_page(soup, current_page=2) is False
 
 
 class TestParseListing:

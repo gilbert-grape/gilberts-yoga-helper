@@ -168,7 +168,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["SIG"])
 
         assert len(results) == 1
         assert results[0]["title"] == "SIG P226"
@@ -190,7 +191,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["Waffen"])
 
         assert len(results) == 3
         assert results[0]["title"] == "SIG P226"
@@ -210,7 +212,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["Waffen"])
 
         # The third listing has "Auf Anfrage" price
         assert results[2]["price"] is None
@@ -228,7 +231,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["SIG"])
 
         assert len(results) == 1
         assert results[0]["price"] is None
@@ -246,7 +250,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["SIG"])
 
         assert len(results) == 1
         assert results[0]["image_url"] is None
@@ -264,7 +269,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["Test"])
 
         assert len(results) == 1
         # URLs should be absolute
@@ -284,7 +290,7 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            results = await scrape_waffenboerse(search_terms=["Test"])
 
         assert results == []
 
@@ -297,7 +303,7 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            results = await scrape_waffenboerse(search_terms=["Test"])
 
         assert results == []
 
@@ -311,7 +317,7 @@ class TestScrapeWaffenboerse:
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenboerse.logger") as mock_logger:
-                results = await scrape_waffenboerse()
+                results = await scrape_waffenboerse(search_terms=["Test"])
 
         assert results == []
         mock_logger.error.assert_called_once()
@@ -330,7 +336,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["Nothing"])
 
         assert results == []
 
@@ -347,7 +354,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["SIG"])
 
         assert results[0]["source"] == "waffenboerse.ch"
 
@@ -364,7 +372,8 @@ class TestScrapeWaffenboerse:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
-            results = await scrape_waffenboerse()
+            with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
+                results = await scrape_waffenboerse(search_terms=["Browning"])
 
         assert len(results) == 1
         assert results[0]["title"] == "Browning Hi-Power"
@@ -414,7 +423,7 @@ class TestScrapeWaffenboerse:
 
         with patch("backend.scrapers.waffenboerse.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenboerse.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenboerse()
+                results = await scrape_waffenboerse(search_terms=["Gun"])
 
         # Should have listings from both pages
         assert len(results) == 2
@@ -565,12 +574,41 @@ class TestHasNextPage:
     def test_detects_next_page_link(self):
         """Detect pagination with next link."""
         soup = BeautifulSoup(SAMPLE_HTML_WITH_PAGINATION, "lxml")
-        assert _has_next_page(soup) is True
+        assert _has_next_page(soup, current_page=1) is True
 
     def test_returns_false_for_no_pagination(self):
         """Return False when no pagination found."""
         soup = BeautifulSoup(SAMPLE_HTML_NO_LISTINGS, "lxml")
-        assert _has_next_page(soup) is False
+        assert _has_next_page(soup, current_page=1) is False
+
+    def test_returns_false_when_on_last_page(self):
+        """Return False when current_page equals max page."""
+        html = """
+        <html><body>
+            <div class="pagination">
+                <a href="?page=1">1</a>
+                <a href="?page=2">2</a>
+            </div>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        assert _has_next_page(soup, current_page=2) is False
+
+    def test_detects_higher_page_numbers(self):
+        """Detect pages with higher page numbers available."""
+        html = """
+        <html><body>
+            <div class="pagination">
+                <a href="?page=1">1</a>
+                <a href="?page=2">2</a>
+                <a href="?page=3">3</a>
+            </div>
+        </body></html>
+        """
+        soup = BeautifulSoup(html, "lxml")
+        assert _has_next_page(soup, current_page=1) is True
+        assert _has_next_page(soup, current_page=2) is True
+        assert _has_next_page(soup, current_page=3) is False
 
 
 class TestParseListing:
