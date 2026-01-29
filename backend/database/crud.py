@@ -597,32 +597,35 @@ def create_exclude_term(
     return exclude_term
 
 
-# Default exclude terms to create at startup
+# Default exclude terms to create on first startup only
 DEFAULT_EXCLUDE_TERMS = ["CO2", "Airsoft", "Softair"]
 
 
 def ensure_default_exclude_terms(session: Session) -> list[ExcludeTerm]:
     """
-    Ensure default exclude terms exist in the database.
+    Create default exclude terms on first startup only.
 
-    Creates any missing default exclude terms. Existing terms are not modified.
+    Only creates default terms if the exclude_terms table is completely empty.
+    This ensures user modifications (additions, deletions) are preserved
+    across server restarts.
 
     Args:
         session: Database session
 
     Returns:
-        List of all exclude terms (including newly created ones)
+        List of all exclude terms
     """
-    created_count = 0
+    # Only create defaults if table is empty (first run)
+    existing_count = session.query(ExcludeTerm).count()
+    if existing_count > 0:
+        logger.debug("Exclude terms already exist, skipping defaults")
+        return get_all_exclude_terms_sorted(session)
+
+    # First run - create default exclude terms
     for term in DEFAULT_EXCLUDE_TERMS:
-        existing = get_exclude_term_by_term(session, term)
-        if not existing:
-            create_exclude_term(session, term)
-            created_count += 1
+        create_exclude_term(session, term)
 
-    if created_count > 0:
-        logger.info(f"Created {created_count} default exclude terms")
-
+    logger.info(f"Created {len(DEFAULT_EXCLUDE_TERMS)} default exclude terms (first run)")
     return get_all_exclude_terms_sorted(session)
 
 
