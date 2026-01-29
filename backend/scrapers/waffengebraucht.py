@@ -21,18 +21,21 @@ from backend.utils.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://waffengebraucht.ch"  # Note: no www - site redirects
-# Site uses category-based listings - kurzwaffen (handguns) and langwaffen (long guns)
-CATEGORY_URLS = [
-    f"{BASE_URL}/li/kurzwaffen",
-    f"{BASE_URL}/li/langwaffen",
-]
+# Site uses search-based scraping - search for each term directly
+# Search URL pattern: /li/?q={term}, pagination: /li/?q={term}&page={N}
 SOURCE_NAME = "waffengebraucht.ch"
-MAX_PAGES = 10  # Reasonable limit to avoid excessive scraping
+MAX_PAGES = 10  # Max pages per search term
 
 
-async def scrape_waffengebraucht() -> ScraperResults:
+async def scrape_waffengebraucht(search_terms: list[str] | None = None) -> ScraperResults:
     """
-    Scrape all listings from waffengebraucht.ch.
+    Scrape listings from waffengebraucht.ch using search.
+
+    This scraper uses the site's search functionality to find relevant listings.
+    If no search_terms are provided, it will fetch them from the database.
+
+    Args:
+        search_terms: Optional list of search terms. If None, fetches from database.
 
     Returns:
         List of ScraperResult dicts with title, price, image_url, link, source.
@@ -40,20 +43,36 @@ async def scrape_waffengebraucht() -> ScraperResults:
     """
     # Import here to avoid circular dependency
     from backend.services.crawler import add_crawl_log
+    from urllib.parse import quote_plus
+
+    # If no search terms provided, get them from the database
+    if search_terms is None:
+        from backend.database import SessionLocal
+        from backend.database.crud import get_active_search_terms
+        with SessionLocal() as session:
+            db_terms = get_active_search_terms(session)
+            search_terms = [t.term for t in db_terms]
+
+    if not search_terms:
+        logger.warning(f"{SOURCE_NAME} - No search terms to search for")
+        return []
 
     results: ScraperResults = []
+    seen_links: set[str] = set()  # Deduplicate results across searches
 
     try:
         async with create_http_client() as client:
-            for category_url in CATEGORY_URLS:
-                # Extract category name from URL for logging
-                category_name = category_url.split("/")[-1]
-                add_crawl_log(f"  → Kategorie: {category_name}")
+            for term in search_terms:
+                add_crawl_log(f"  → Suche: '{term}'")
 
                 page = 1
                 while page <= MAX_PAGES:
-                    # Construct URL for current page
-                    url = category_url if page == 1 else f"{category_url}?&page={page}"
+                    # Construct search URL
+                    encoded_term = quote_plus(term)
+                    if page == 1:
+                        url = f"{BASE_URL}/li/?q={encoded_term}"
+                    else:
+                        url = f"{BASE_URL}/li/?q={encoded_term}&page={page}"
                     add_crawl_log(f"    Seite {page}...")
 
                     response = await client.get(url)
@@ -71,34 +90,35 @@ async def scrape_waffengebraucht() -> ScraperResults:
 
                     if not listings:
                         if page == 1:
-                            logger.warning(f"{SOURCE_NAME} - No listings found on {category_url}, HTML structure may have changed")
+                            add_crawl_log(f"    Keine Ergebnisse für '{term}'")
                         break
 
                     page_results = 0
                     for listing in listings:
                         try:
                             result = _parse_listing(listing)
-                            if result:
+                            if result and result["link"] not in seen_links:
+                                seen_links.add(result["link"])
                                 results.append(result)
                                 page_results += 1
                         except Exception as e:
                             logger.warning(f"{SOURCE_NAME} - Failed to parse listing: {e}")
                             continue
 
-                    logger.debug(f"{SOURCE_NAME} - {category_url} page {page}: found {page_results} listings")
+                    logger.debug(f"{SOURCE_NAME} - Search '{term}' page {page}: found {page_results} new listings")
 
-                    if not _has_next_page(soup, page):
+                    # Check if there's a next page
+                    if not _has_next_page(soup, page) or page_results == 0:
                         break
 
                     page += 1
                     if page <= MAX_PAGES:
                         await delay_between_requests()
 
-                # Delay between categories
-                if category_url != CATEGORY_URLS[-1]:
-                    await delay_between_requests()
+                # Delay between search terms
+                await delay_between_requests()
 
-            logger.info(f"{SOURCE_NAME} - Scraped {len(results)} listings total")
+            logger.info(f"{SOURCE_NAME} - Scraped {len(results)} unique listings total")
 
     except Exception as e:
         logger.error(f"{SOURCE_NAME} - Failed: {e}")
