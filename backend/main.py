@@ -157,12 +157,18 @@ async def lifespan(app: FastAPI):
     # Startup: Verify database (but don't auto-migrate)
     verify_database()
 
-    # Create all registered sources and default exclude terms at startup
-    from backend.database import SessionLocal, ensure_default_exclude_terms
+    # Create all registered sources and default terms at startup
+    from backend.database import (
+        SessionLocal,
+        ensure_default_search_terms,
+        ensure_default_exclude_terms,
+    )
     db = SessionLocal()
     try:
         ensure_sources_exist(db)
         logger.info("All registered sources initialized")
+        ensure_default_search_terms(db)
+        logger.info("Default search terms initialized")
         ensure_default_exclude_terms(db)
         logger.info("Default exclude terms initialized")
     except Exception as e:

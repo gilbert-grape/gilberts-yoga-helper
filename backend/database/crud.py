@@ -378,6 +378,41 @@ def create_search_term(
     return search_term
 
 
+# Default search terms to create on first startup only
+DEFAULT_SEARCH_TERMS = [
+    "PPSH", "Tokarev", "Russ", "USSR", "UDSSR",
+    "CZ", "VZ", "CZ 75", "Makarov"
+]
+
+
+def ensure_default_search_terms(session: Session) -> list[SearchTerm]:
+    """
+    Create default search terms on first startup only.
+
+    Only creates default terms if the search_terms table is completely empty.
+    This ensures user modifications (additions, deletions) are preserved
+    across server restarts.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of all search terms
+    """
+    # Only create defaults if table is empty (first run)
+    existing_count = session.query(SearchTerm).count()
+    if existing_count > 0:
+        logger.debug("Search terms already exist, skipping defaults")
+        return get_all_search_terms(session)
+
+    # First run - create default search terms
+    for term in DEFAULT_SEARCH_TERMS:
+        create_search_term(session, term)
+
+    logger.info(f"Created {len(DEFAULT_SEARCH_TERMS)} default search terms (first run)")
+    return get_all_search_terms(session)
+
+
 def delete_search_term(session: Session, term_id: int) -> bool:
     """
     Delete a search term by ID.
