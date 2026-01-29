@@ -47,6 +47,8 @@ from backend.database import (
     create_search_term,
     delete_search_term,
     update_search_term_match_type,
+    move_search_term_up,
+    move_search_term_down,
     get_all_sources_sorted,
     get_source_by_id,
     toggle_source_active,
@@ -228,12 +230,13 @@ async def admin_search_terms(request: Request, db: Session = Depends(get_db)):
     """
     Admin page for managing search terms.
 
-    Displays all search terms sorted alphabetically with options to:
+    Displays all search terms sorted by sort_order with options to:
     - Add new search terms
     - Delete existing search terms
     - Toggle match type (exact/similar)
+    - Reorder search terms (move up/down)
     """
-    search_terms = get_all_search_terms_sorted(db)
+    search_terms = get_all_search_terms(db)
     return templates.TemplateResponse(
         request,
         "admin/search_terms.html",
@@ -269,7 +272,7 @@ async def add_search_term(
         error = "Ungültiger Matching-Typ."
 
     if error:
-        search_terms = get_all_search_terms_sorted(db)
+        search_terms = get_all_search_terms(db)
         return templates.TemplateResponse(
             request,
             "admin/_partials/_search_terms_list.html",
@@ -281,7 +284,7 @@ async def add_search_term(
 
     # Create the new search term
     create_search_term(db, term_text, match_type)
-    search_terms = get_all_search_terms_sorted(db)
+    search_terms = get_all_search_terms(db)
 
     return templates.TemplateResponse(
         request,
@@ -308,7 +311,7 @@ async def remove_search_term(
     term_text = term.term if term else "Unbekannt"
 
     success = delete_search_term(db, term_id)
-    search_terms = get_all_search_terms_sorted(db)
+    search_terms = get_all_search_terms(db)
 
     message = None
     if success:
@@ -351,6 +354,48 @@ async def toggle_match_type(
         request,
         "admin/_partials/_search_term_row.html",
         {"term": updated_term}
+    )
+
+
+@app.post("/admin/search-terms/{term_id}/move-up")
+async def move_term_up(
+    request: Request,
+    term_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Move a search term up in sort order.
+
+    Returns the updated search terms list partial for HTMX swap.
+    """
+    move_search_term_up(db, term_id)
+    search_terms = get_all_search_terms(db)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_search_terms_list.html",
+        {"search_terms": search_terms}
+    )
+
+
+@app.post("/admin/search-terms/{term_id}/move-down")
+async def move_term_down(
+    request: Request,
+    term_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Move a search term down in sort order.
+
+    Returns the updated search terms list partial for HTMX swap.
+    """
+    move_search_term_down(db, term_id)
+    search_terms = get_all_search_terms(db)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_search_terms_list.html",
+        {"search_terms": search_terms}
     )
 
 

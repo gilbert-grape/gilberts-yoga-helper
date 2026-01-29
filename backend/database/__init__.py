@@ -38,6 +38,8 @@ from backend.database.crud import (
     create_search_term,
     delete_search_term,
     update_search_term_match_type,
+    move_search_term_up,
+    move_search_term_down,
     # Match operations
     get_match_by_url_and_term,
     save_match,
@@ -87,6 +89,8 @@ __all__ = [
     "create_search_term",
     "delete_search_term",
     "update_search_term_match_type",
+    "move_search_term_up",
+    "move_search_term_down",
     # CRUD - Matches
     "get_match_by_url_and_term",
     "save_match",

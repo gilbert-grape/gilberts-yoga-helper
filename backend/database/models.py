@@ -61,6 +61,7 @@ class SearchTerm(TimestampMixin, Base):
         term: The search term text (e.g., "Glock 17", "SIG 550")
         match_type: How to match - "exact" or "similar"
         is_active: Whether to include in crawls
+        sort_order: Order for display and search execution (lower = first)
     """
 
     __tablename__ = "search_terms"
@@ -76,6 +77,7 @@ class SearchTerm(TimestampMixin, Base):
         String(20), default="exact", nullable=False
     )  # "exact" or "similar"
     is_active = Column(Boolean, default=True, nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False, index=True)
 
     # Relationship to matches
     matches = relationship("Match", back_populates="search_term", cascade="all, delete-orphan")

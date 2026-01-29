@@ -1,5 +1,33 @@
 {# Single Search Term Row Partial - used for HTMX row updates #}
 <tr id="term-row-{{ term.id }}">
+    <td class="px-3 py-4 whitespace-nowrap text-center">
+        <div class="flex justify-center space-x-1">
+            <button
+                hx-post="/admin/search-terms/{{ term.id }}/move-up"
+                hx-target="#search-terms-list"
+                hx-swap="innerHTML"
+                class="p-1 rounded hover:bg-gray-100 {% if is_first %}opacity-30 cursor-not-allowed{% else %}text-gray-600 hover:text-gray-900{% endif %}"
+                {% if is_first %}disabled{% endif %}
+                title="Nach oben"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+            </button>
+            <button
+                hx-post="/admin/search-terms/{{ term.id }}/move-down"
+                hx-target="#search-terms-list"
+                hx-swap="innerHTML"
+                class="p-1 rounded hover:bg-gray-100 {% if is_last %}opacity-30 cursor-not-allowed{% else %}text-gray-600 hover:text-gray-900{% endif %}"
+                {% if is_last %}disabled{% endif %}
+                title="Nach unten"
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+        </div>
+    </td>
     <td class="px-6 py-4 whitespace-nowrap">
         <div class="text-sm font-medium text-gray-900">{{ term.term }}</div>
     </td>

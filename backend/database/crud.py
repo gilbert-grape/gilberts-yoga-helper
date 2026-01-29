@@ -197,28 +197,30 @@ def clear_source_error(session: Session, source_id: int) -> Optional[Source]:
 
 def get_active_search_terms(session: Session) -> list[SearchTerm]:
     """
-    Get all active search terms for matching.
+    Get all active search terms for matching, ordered by sort_order.
 
     Args:
         session: Database session
 
     Returns:
-        List of active SearchTerm records
+        List of active SearchTerm records ordered by sort_order
     """
-    return session.query(SearchTerm).filter(SearchTerm.is_active == True).all()
+    return session.query(SearchTerm).filter(
+        SearchTerm.is_active == True
+    ).order_by(SearchTerm.sort_order).all()
 
 
 def get_all_search_terms(session: Session) -> list[SearchTerm]:
     """
-    Get all search terms (active and inactive).
+    Get all search terms (active and inactive), ordered by sort_order.
 
     Args:
         session: Database session
 
     Returns:
-        List of all SearchTerm records
+        List of all SearchTerm records ordered by sort_order
     """
-    return session.query(SearchTerm).all()
+    return session.query(SearchTerm).order_by(SearchTerm.sort_order).all()
 
 
 def search_term_to_dict(term: SearchTerm) -> dict:
@@ -302,7 +304,14 @@ def create_search_term(
     Returns:
         Newly created SearchTerm
     """
-    search_term = SearchTerm(term=term, match_type=match_type, is_active=is_active)
+    # Get the highest sort_order and add 1
+    max_order = session.query(SearchTerm).count()
+    search_term = SearchTerm(
+        term=term,
+        match_type=match_type,
+        is_active=is_active,
+        sort_order=max_order
+    )
     session.add(search_term)
     session.commit()
     session.refresh(search_term)
@@ -361,6 +370,72 @@ def update_search_term_match_type(
     session.refresh(term)
 
     logger.info(f"Updated search term '{term.term}' match_type to '{match_type}'")
+    return term
+
+
+def move_search_term_up(session: Session, term_id: int) -> Optional[SearchTerm]:
+    """
+    Move a search term up in sort order (decrease sort_order).
+
+    Args:
+        session: Database session
+        term_id: Search term ID
+
+    Returns:
+        Updated SearchTerm, or None if not found or already at top
+    """
+    term = get_search_term_by_id(session, term_id)
+    if not term:
+        return None
+
+    # Find the term above this one (with lower sort_order)
+    term_above = session.query(SearchTerm).filter(
+        SearchTerm.sort_order < term.sort_order
+    ).order_by(SearchTerm.sort_order.desc()).first()
+
+    if not term_above:
+        # Already at top
+        return term
+
+    # Swap sort_orders
+    term.sort_order, term_above.sort_order = term_above.sort_order, term.sort_order
+    session.commit()
+    session.refresh(term)
+
+    logger.info(f"Moved search term '{term.term}' up")
+    return term
+
+
+def move_search_term_down(session: Session, term_id: int) -> Optional[SearchTerm]:
+    """
+    Move a search term down in sort order (increase sort_order).
+
+    Args:
+        session: Database session
+        term_id: Search term ID
+
+    Returns:
+        Updated SearchTerm, or None if not found or already at bottom
+    """
+    term = get_search_term_by_id(session, term_id)
+    if not term:
+        return None
+
+    # Find the term below this one (with higher sort_order)
+    term_below = session.query(SearchTerm).filter(
+        SearchTerm.sort_order > term.sort_order
+    ).order_by(SearchTerm.sort_order.asc()).first()
+
+    if not term_below:
+        # Already at bottom
+        return term
+
+    # Swap sort_orders
+    term.sort_order, term_below.sort_order = term_below.sort_order, term.sort_order
+    session.commit()
+    session.refresh(term)
+
+    logger.info(f"Moved search term '{term.term}' down")
     return term
 
 
