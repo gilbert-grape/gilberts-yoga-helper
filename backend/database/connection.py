@@ -38,10 +38,27 @@ engine = create_engine(
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
-    """Enable WAL mode on every SQLite connection for better concurrency."""
+    """
+    Enable WAL mode and set pragmas for better durability and concurrency.
+
+    - WAL mode: Better concurrency for reads during writes
+    - synchronous=NORMAL: Good balance of safety and performance
+    - wal_autocheckpoint=100: Checkpoint more frequently to prevent data loss
+    """
     cursor = dbapi_connection.cursor()
+
+    # Enable WAL mode
     cursor.execute("PRAGMA journal_mode=WAL")
     result = cursor.fetchone()
+
+    # Set synchronous to NORMAL for better durability
+    # (FULL is safest but slower, NORMAL is good balance)
+    cursor.execute("PRAGMA synchronous=NORMAL")
+
+    # Checkpoint more frequently (every 100 pages instead of default 1000)
+    # This reduces data loss risk on unexpected shutdown
+    cursor.execute("PRAGMA wal_autocheckpoint=100")
+
     cursor.close()
 
     # Verify WAL mode was set correctly
