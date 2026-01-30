@@ -468,6 +468,33 @@ def update_search_term_match_type(
     return term
 
 
+def toggle_search_term_hide_seen(
+    session: Session,
+    term_id: int
+) -> Optional[SearchTerm]:
+    """
+    Toggle a search term's hide_seen_matches setting.
+
+    Args:
+        session: Database session
+        term_id: Search term ID
+
+    Returns:
+        Updated SearchTerm, or None if not found
+    """
+    term = get_search_term_by_id(session, term_id)
+    if not term:
+        return None
+
+    term.hide_seen_matches = not term.hide_seen_matches
+    session.commit()
+    session.refresh(term)
+
+    status = "aktiviert" if term.hide_seen_matches else "deaktiviert"
+    logger.info(f"Search term '{term.term}' hide_seen_matches {status}")
+    return term
+
+
 def move_search_term_up(session: Session, term_id: int) -> Optional[SearchTerm]:
     """
     Move a search term up in sort order (decrease sort_order).

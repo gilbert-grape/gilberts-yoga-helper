@@ -83,6 +83,8 @@ class SearchTerm(TimestampMixin, Base):
         match_type: How to match - "exact" or "similar"
         is_active: Whether to include in crawls
         sort_order: Order for display and search execution (lower = first)
+        hide_seen_matches: If True, matches already shown by earlier search terms
+                          (by sort_order) will be hidden in the dashboard
     """
 
     __tablename__ = "search_terms"
@@ -99,6 +101,7 @@ class SearchTerm(TimestampMixin, Base):
     )  # "exact" or "similar"
     is_active = Column(Boolean, default=True, nullable=False)
     sort_order = Column(Integer, default=0, nullable=False, index=True)
+    hide_seen_matches = Column(Boolean, default=True, nullable=False)
 
     # Relationship to matches
     matches = relationship("Match", back_populates="search_term", cascade="all, delete-orphan")

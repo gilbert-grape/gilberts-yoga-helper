@@ -47,6 +47,7 @@ from backend.database import (
     create_search_term,
     delete_search_term,
     update_search_term_match_type,
+    toggle_search_term_hide_seen,
     move_search_term_up,
     move_search_term_down,
     get_all_sources_sorted,
@@ -207,20 +208,33 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     - Matches grouped by search term with collapsible sections
     - Count of new (unseen) matches per group and total
     - Empty state for search terms with no matches
+    - Duplicate filtering based on hide_seen_matches setting
 
     After displaying, marks all matches as seen so they won't
     appear as "new" on the next visit.
     """
-    # Get all search terms (including those with no matches)
+    # Get all search terms (including those with no matches), sorted by sort_order
     search_terms = get_all_search_terms(db)
 
-    # Build groups with matches
+    # Build groups with matches, filtering duplicates based on hide_seen_matches
     groups = []
     total_count = 0
     total_new_count = 0
+    seen_urls: set[str] = set()  # Track URLs already shown by earlier search terms
 
     for term in search_terms:
-        matches = get_matches_by_search_term(db, term.id)
+        all_matches = get_matches_by_search_term(db, term.id)
+
+        # Filter out duplicates if hide_seen_matches is enabled
+        if term.hide_seen_matches:
+            matches = [m for m in all_matches if m.url not in seen_urls]
+        else:
+            matches = all_matches
+
+        # Add all match URLs from this term to the seen set (for filtering later terms)
+        for m in all_matches:
+            seen_urls.add(m.url)
+
         new_count = sum(1 for m in matches if m.is_new)
         groups.append({
             "term": term,
@@ -380,6 +394,32 @@ async def toggle_match_type(
     # Toggle the match type
     new_type = "similar" if term.match_type == "exact" else "exact"
     updated_term = update_search_term_match_type(db, term_id, new_type)
+
+    return templates.TemplateResponse(
+        request,
+        "admin/_partials/_search_term_row.html",
+        {"term": updated_term}
+    )
+
+
+@app.patch("/admin/search-terms/{term_id}/hide-seen")
+async def toggle_hide_seen(
+    request: Request,
+    term_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Toggle a search term's hide_seen_matches setting.
+
+    Returns the updated search term row partial for HTMX swap.
+    """
+    updated_term = toggle_search_term_hide_seen(db, term_id)
+    if not updated_term:
+        return templates.TemplateResponse(
+            request,
+            "admin/_partials/_search_term_row.html",
+            {"term": None, "error": "Suchbegriff nicht gefunden."}
+        )
 
     return templates.TemplateResponse(
         request,

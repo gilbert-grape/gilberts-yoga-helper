@@ -57,6 +57,30 @@
             {% endif %}
         </button>
     </td>
+    <td class="px-6 py-4 whitespace-nowrap text-center">
+        <button
+            hx-patch="/admin/search-terms/{{ term.id }}/hide-seen"
+            hx-target="#term-row-{{ term.id }}"
+            hx-swap="outerHTML"
+            class="inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer transition-colors
+                {% if term.hide_seen_matches %}
+                    bg-green-100 text-green-600 hover:bg-green-200
+                {% else %}
+                    bg-gray-100 text-gray-400 hover:bg-gray-200
+                {% endif %}"
+            title="{% if term.hide_seen_matches %}Duplikate werden ausgeblendet{% else %}Duplikate werden angezeigt{% endif %}"
+        >
+            {% if term.hide_seen_matches %}
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            {% else %}
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            {% endif %}
+        </button>
+    </td>
     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <button
             hx-delete="/admin/search-terms/{{ term.id }}"

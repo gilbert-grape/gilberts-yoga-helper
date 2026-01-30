@@ -42,6 +42,7 @@ from backend.database.crud import (
     ensure_default_search_terms,
     delete_search_term,
     update_search_term_match_type,
+    toggle_search_term_hide_seen,
     move_search_term_up,
     move_search_term_down,
     # Exclude term operations
@@ -107,6 +108,7 @@ __all__ = [
     "ensure_default_search_terms",
     "delete_search_term",
     "update_search_term_match_type",
+    "toggle_search_term_hide_seen",
     "move_search_term_up",
     "move_search_term_down",
     # CRUD - Exclude Terms
