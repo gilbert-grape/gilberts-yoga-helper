@@ -852,7 +852,12 @@ class TestRunCrawlAsyncStates:
             "waffenboerse.ch": make_slow_scraper("waffenboerse"),
             "waffengebraucht.ch": make_slow_scraper("waffengebraucht"),
             "waffenzimmi.ch": make_slow_scraper("waffenzimmi"),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             _crawl_state.is_running = False
             result = await run_crawl_async(test_session, state_prepared=False)
 
@@ -865,7 +870,10 @@ class TestRunCrawlAsyncStates:
         """Test that crawl resets state after completion."""
         with patch.dict(SCRAPER_REGISTRY, {
             "waffenboerse.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+        }, clear=True):
             _crawl_state.is_running = False
             await run_crawl_async(test_session)
 
@@ -878,7 +886,10 @@ class TestRunCrawlAsyncStates:
         """Test that crawl stores result in global state."""
         with patch.dict(SCRAPER_REGISTRY, {
             "waffenboerse.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+        }, clear=True):
             _crawl_state.is_running = False
             _crawl_state.last_result = None
             result = await run_crawl_async(test_session)
@@ -903,7 +914,10 @@ class TestRunCrawlAsyncExcludeTerms:
 
         with patch.dict(SCRAPER_REGISTRY, {
             "waffenboerse.ch": make_async_scraper(mock_listings),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+        }, clear=True):
             _crawl_state.is_running = False
             clear_crawl_log()
             await run_crawl_async(test_session)
@@ -921,7 +935,10 @@ class TestCrawlResultTimestamps:
         """Test that started_at and completed_at are set."""
         with patch.dict(SCRAPER_REGISTRY, {
             "waffenboerse.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         assert result.started_at is not None
