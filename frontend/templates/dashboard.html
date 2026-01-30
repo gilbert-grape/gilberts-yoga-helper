@@ -243,10 +243,11 @@
         });
     });
 
-    // Filter checkbox - save to cookie and reload
+    // Filter checkbox - save to cookie and reload with query param
     document.getElementById('filter-checkbox').addEventListener('change', function() {
-        setCookie('filter_mode', this.checked ? 'true' : 'false', 365);
-        window.location.href = '/';
+        const filterValue = this.checked ? 'true' : 'false';
+        setCookie('filter_mode', filterValue, 365);
+        window.location.href = '/?filter=' + filterValue;
     });
 </script>
 {% endblock %}
