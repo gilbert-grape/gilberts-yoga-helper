@@ -7,7 +7,13 @@ Supports two matching modes:
 - similar: Normalized match (ignores spaces, hyphens, case)
 """
 import re
-from typing import Dict, List, Optional, TypedDict
+import sys
+from typing import Dict, List, Optional
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 
 class MatchResult(TypedDict):
