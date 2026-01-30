@@ -1,6 +1,5 @@
 [tool.poetry]
 name = "gilberts-yoga-helper"
-package-mode = false
 version = "0.1.0"
 description = "Gilbert's Yoga Helper - personal web app for Raspberry Pi"
 authors = ["Löli"]
