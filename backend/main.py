@@ -278,10 +278,7 @@ async def dashboard(
         total_new_count += new_count
 
     # Build response first (so matches still show as "new" in this render)
-    response = templates.TemplateResponse(
-        request,
-        "dashboard.html",
-        {
+    response = templates.TemplateResponse("dashboard.html", {"request": request, 
             "title": "Dashboard",
             "groups": groups,
             "total_count": total_count,
@@ -315,10 +312,7 @@ async def admin_search_terms(request: Request, db: Session = Depends(get_db)):
     - Reorder search terms (move up/down)
     """
     search_terms = get_all_search_terms(db)
-    return templates.TemplateResponse(
-        request,
-        "admin/search_terms.html",
-        {
+    return templates.TemplateResponse("admin/search_terms.html", {"request": request, 
             "title": "Suchbegriffe",
             "search_terms": search_terms,
         }
@@ -351,10 +345,7 @@ async def add_search_term(
 
     if error:
         search_terms = get_all_search_terms(db)
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_search_terms_list.html",
-            {
+        return templates.TemplateResponse("admin/_partials/_search_terms_list.html", {"request": request, 
                 "search_terms": search_terms,
                 "error": error,
             }
@@ -364,10 +355,7 @@ async def add_search_term(
     create_search_term(db, term_text, match_type)
     search_terms = get_all_search_terms(db)
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_search_terms_list.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_search_terms_list.html", {"request": request, 
             "search_terms": search_terms,
             "success": f"Suchbegriff '{term_text}' hinzugefügt.",
         }
@@ -395,10 +383,7 @@ async def remove_search_term(
     if success:
         message = f"Suchbegriff '{term_text}' gelöscht."
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_search_terms_list.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_search_terms_list.html", {"request": request, 
             "search_terms": search_terms,
             "success": message,
         }
@@ -418,20 +403,14 @@ async def toggle_match_type(
     """
     term = get_search_term_by_id(db, term_id)
     if not term:
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_search_term_row.html",
-            {"term": None, "error": "Suchbegriff nicht gefunden."}
+        return templates.TemplateResponse("admin/_partials/_search_term_row.html", {"request": request, "term": None, "error": "Suchbegriff nicht gefunden."}
         )
 
     # Toggle the match type
     new_type = "similar" if term.match_type == "exact" else "exact"
     updated_term = update_search_term_match_type(db, term_id, new_type)
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_search_term_row.html",
-        {"term": updated_term}
+    return templates.TemplateResponse("admin/_partials/_search_term_row.html", {"request": request, "term": updated_term}
     )
 
 
@@ -448,16 +427,10 @@ async def toggle_hide_seen(
     """
     updated_term = toggle_search_term_hide_seen(db, term_id)
     if not updated_term:
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_search_term_row.html",
-            {"term": None, "error": "Suchbegriff nicht gefunden."}
+        return templates.TemplateResponse("admin/_partials/_search_term_row.html", {"request": request, "term": None, "error": "Suchbegriff nicht gefunden."}
         )
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_search_term_row.html",
-        {"term": updated_term}
+    return templates.TemplateResponse("admin/_partials/_search_term_row.html", {"request": request, "term": updated_term}
     )
 
 
@@ -475,10 +448,7 @@ async def move_term_up(
     move_search_term_up(db, term_id)
     search_terms = get_all_search_terms(db)
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_search_terms_list.html",
-        {"search_terms": search_terms}
+    return templates.TemplateResponse("admin/_partials/_search_terms_list.html", {"request": request, "search_terms": search_terms}
     )
 
 
@@ -496,10 +466,7 @@ async def move_term_down(
     move_search_term_down(db, term_id)
     search_terms = get_all_search_terms(db)
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_search_terms_list.html",
-        {"search_terms": search_terms}
+    return templates.TemplateResponse("admin/_partials/_search_terms_list.html", {"request": request, "search_terms": search_terms}
     )
 
 
@@ -519,10 +486,7 @@ async def admin_exclude_terms(request: Request, db: Session = Depends(get_db)):
     - Toggle active state
     """
     exclude_terms = get_all_exclude_terms_sorted(db)
-    return templates.TemplateResponse(
-        request,
-        "admin/exclude_terms.html",
-        {
+    return templates.TemplateResponse("admin/exclude_terms.html", {"request": request, 
             "title": "Ausschlüsse",
             "exclude_terms": exclude_terms,
         }
@@ -552,10 +516,7 @@ async def add_exclude_term(
 
     if error:
         exclude_terms = get_all_exclude_terms_sorted(db)
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_exclude_terms_list.html",
-            {
+        return templates.TemplateResponse("admin/_partials/_exclude_terms_list.html", {"request": request, 
                 "exclude_terms": exclude_terms,
                 "error": error,
             }
@@ -565,10 +526,7 @@ async def add_exclude_term(
     create_exclude_term(db, term_text)
     exclude_terms = get_all_exclude_terms_sorted(db)
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_exclude_terms_list.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_exclude_terms_list.html", {"request": request, 
             "exclude_terms": exclude_terms,
             "success": f"Ausschlussbegriff '{term_text}' hinzugefügt.",
         }
@@ -596,10 +554,7 @@ async def remove_exclude_term(
     if success:
         message = f"Ausschlussbegriff '{term_text}' gelöscht."
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_exclude_terms_list.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_exclude_terms_list.html", {"request": request, 
             "exclude_terms": exclude_terms,
             "success": message,
         }
@@ -619,16 +574,10 @@ async def toggle_exclude_term(
     """
     term = toggle_exclude_term_active(db, term_id)
     if not term:
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_exclude_term_row.html",
-            {"term": None, "error": "Ausschlussbegriff nicht gefunden."}
+        return templates.TemplateResponse("admin/_partials/_exclude_term_row.html", {"request": request, "term": None, "error": "Ausschlussbegriff nicht gefunden."}
         )
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_exclude_term_row.html",
-        {"term": term}
+    return templates.TemplateResponse("admin/_partials/_exclude_term_row.html", {"request": request, "term": term}
     )
 
 
@@ -643,10 +592,7 @@ async def admin_sources(request: Request, db: Session = Depends(get_db)):
     - Error status if any
     """
     sources = get_all_sources_sorted(db)
-    return templates.TemplateResponse(
-        request,
-        "admin/sources.html",
-        {
+    return templates.TemplateResponse("admin/sources.html", {"request": request, 
             "title": "Quellen",
             "sources": sources,
         }
@@ -666,16 +612,10 @@ async def toggle_source(
     """
     source = toggle_source_active(db, source_id)
     if not source:
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_source_row.html",
-            {"source": None, "error": "Quelle nicht gefunden."}
+        return templates.TemplateResponse("admin/_partials/_source_row.html", {"request": request, "source": None, "error": "Quelle nicht gefunden."}
         )
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_source_row.html",
-        {"source": source}
+    return templates.TemplateResponse("admin/_partials/_source_row.html", {"request": request, "source": source}
     )
 
 
@@ -692,16 +632,10 @@ async def clear_source_error_route(
     """
     source = clear_source_error(db, source_id)
     if not source:
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_source_row.html",
-            {"source": None, "error": "Quelle nicht gefunden."}
+        return templates.TemplateResponse("admin/_partials/_source_row.html", {"request": request, "source": None, "error": "Quelle nicht gefunden."}
         )
 
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_source_row.html",
-        {"source": source}
+    return templates.TemplateResponse("admin/_partials/_source_row.html", {"request": request, "source": source}
     )
 
 
@@ -717,10 +651,7 @@ async def move_source_up_route(
     Returns the updated sources list partial for HTMX swap.
     """
     sources = move_source_up(db, source_id)
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_sources_list.html",
-        {"sources": sources}
+    return templates.TemplateResponse("admin/_partials/_sources_list.html", {"request": request, "sources": sources}
     )
 
 
@@ -736,10 +667,7 @@ async def move_source_down_route(
     Returns the updated sources list partial for HTMX swap.
     """
     sources = move_source_down(db, source_id)
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_sources_list.html",
-        {"sources": sources}
+    return templates.TemplateResponse("admin/_partials/_sources_list.html", {"request": request, "sources": sources}
     )
 
 
@@ -754,10 +682,7 @@ async def admin_crawl_status(request: Request):
     - Manual crawl trigger button
     """
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse(
-        request,
-        "admin/crawl_status.html",
-        {
+    return templates.TemplateResponse("admin/crawl_status.html", {"request": request, 
             "title": "Crawl-Status",
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
@@ -780,10 +705,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
     # Check if already running
     if is_crawl_running():
         crawl_state = get_crawl_state()
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_crawl_status.html",
-            {
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
                 "is_running": True,
                 "current_source": crawl_state.current_source,
                 "last_result": crawl_state.last_result,
@@ -796,10 +718,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
     active_terms = get_active_search_terms(db)
     if not active_terms:
         crawl_state = get_crawl_state()
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_crawl_status.html",
-            {
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
                 "is_running": False,
                 "current_source": None,
                 "last_result": crawl_state.last_result,
@@ -829,10 +748,7 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
 
     # Return immediately with running state
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_crawl_status.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
@@ -849,10 +765,7 @@ async def get_crawl_status_partial(request: Request):
     Used for real-time status updates during crawl.
     """
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_crawl_status.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
@@ -870,10 +783,7 @@ async def cancel_crawl(request: Request):
     """
     if not is_crawl_running():
         crawl_state = get_crawl_state()
-        return templates.TemplateResponse(
-            request,
-            "admin/_partials/_crawl_status.html",
-            {
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
                 "is_running": False,
                 "current_source": None,
                 "last_result": crawl_state.last_result,
@@ -885,10 +795,7 @@ async def cancel_crawl(request: Request):
     request_crawl_cancel()
 
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse(
-        request,
-        "admin/_partials/_crawl_status.html",
-        {
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
