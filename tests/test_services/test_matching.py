@@ -11,6 +11,7 @@ import pytest
 
 from backend.services.matching import (
     MatchResult,
+    contains_exclude_term,
     find_matches,
     matches,
     matches_exact,
@@ -448,6 +449,98 @@ class TestMatchResultType:
         assert "search_term_id" in result
         assert "search_term" in result
         assert "match_type" in result
+
+
+class TestContainsExcludeTerm:
+    """Tests for contains_exclude_term function."""
+
+    def test_finds_exclude_term_in_title(self):
+        """Should find exclude term in title."""
+        assert contains_exclude_term("Softair Glock 17", ["Softair", "Airsoft"]) is True
+
+    def test_not_found_when_no_match(self):
+        """Should return False when no exclude term matches."""
+        assert contains_exclude_term("Glock 17 Gen5", ["Softair", "Airsoft"]) is False
+
+    def test_case_insensitive(self):
+        """Should match case-insensitively."""
+        assert contains_exclude_term("SOFTAIR Glock", ["softair"]) is True
+        assert contains_exclude_term("softair Glock", ["SOFTAIR"]) is True
+
+    def test_empty_title_returns_false(self):
+        """Empty title should return False."""
+        assert contains_exclude_term("", ["Softair"]) is False
+
+    def test_none_title_returns_false(self):
+        """None title should return False."""
+        assert contains_exclude_term(None, ["Softair"]) is False
+
+    def test_empty_exclude_terms_returns_false(self):
+        """Empty exclude terms list should return False."""
+        assert contains_exclude_term("Softair Glock", []) is False
+
+    def test_none_exclude_terms_returns_false(self):
+        """None exclude terms should return False."""
+        assert contains_exclude_term("Softair Glock", None) is False
+
+    def test_finds_any_of_multiple_terms(self):
+        """Should match if any exclude term is found."""
+        assert contains_exclude_term("Glock Airsoft", ["Softair", "Airsoft", "BB"]) is True
+        assert contains_exclude_term("BB Gun", ["Softair", "Airsoft", "BB"]) is True
+
+    def test_partial_word_match(self):
+        """Should match partial words (substring)."""
+        assert contains_exclude_term("Airsoftwaffe", ["Airsoft"]) is True
+
+
+class TestFindMatchesWithExcludeTerms:
+    """Tests for find_matches with exclude terms."""
+
+    def test_excludes_listings_with_exclude_terms(self):
+        """Listings with exclude terms should be filtered out."""
+        listings = [
+            {"title": "Glock 17 Gen5", "price": 600, "link": "http://example.com/1"},
+            {"title": "Softair Glock 17", "price": 50, "link": "http://example.com/2"},
+            {"title": "Glock 19 Airsoft", "price": 80, "link": "http://example.com/3"},
+        ]
+        terms = [
+            {"id": 1, "term": "Glock", "match_type": "exact", "is_active": True}
+        ]
+        exclude_terms = ["Softair", "Airsoft"]
+
+        results = find_matches(listings, terms, exclude_terms=exclude_terms)
+
+        # Only the real Glock should be matched, not the Softair/Airsoft ones
+        assert len(results) == 1
+        assert results[0]["listing"]["title"] == "Glock 17 Gen5"
+
+    def test_exclude_terms_none_includes_all(self):
+        """None exclude_terms should include all matches."""
+        listings = [
+            {"title": "Glock 17 Gen5", "price": 600, "link": "http://example.com/1"},
+            {"title": "Softair Glock 17", "price": 50, "link": "http://example.com/2"},
+        ]
+        terms = [
+            {"id": 1, "term": "Glock", "match_type": "exact", "is_active": True}
+        ]
+
+        results = find_matches(listings, terms, exclude_terms=None)
+
+        assert len(results) == 2
+
+    def test_empty_exclude_terms_includes_all(self):
+        """Empty exclude_terms should include all matches."""
+        listings = [
+            {"title": "Glock 17 Gen5", "price": 600, "link": "http://example.com/1"},
+            {"title": "Softair Glock 17", "price": 50, "link": "http://example.com/2"},
+        ]
+        terms = [
+            {"id": 1, "term": "Glock", "match_type": "exact", "is_active": True}
+        ]
+
+        results = find_matches(listings, terms, exclude_terms=[])
+
+        assert len(results) == 2
 
 
 class TestRealWorldScenarios:

@@ -29,6 +29,7 @@ from backend.database.models import Source
 from backend.scrapers import (
     ScraperResults,
     scrape_aebiwaffen,
+    scrape_gwmh,
     scrape_waffenboerse,
     scrape_waffengebraucht,
     scrape_waffenzimmi,
@@ -46,6 +47,7 @@ AsyncScraperFunc = Callable[[], Awaitable[ScraperResults]]
 # Source names must match database source.name values
 SCRAPER_REGISTRY: dict[str, AsyncScraperFunc] = {
     "aebiwaffen.ch": scrape_aebiwaffen,
+    "gwmh-shop.ch": scrape_gwmh,
     "waffenboerse.ch": scrape_waffenboerse,
     "waffengebraucht.ch": scrape_waffengebraucht,
     "waffenzimmi.ch": scrape_waffenzimmi,
@@ -54,6 +56,7 @@ SCRAPER_REGISTRY: dict[str, AsyncScraperFunc] = {
 # Base URLs for each source (used when creating sources)
 SOURCE_BASE_URLS: dict[str, str] = {
     "aebiwaffen.ch": "https://www.aebiwaffen.ch",
+    "gwmh-shop.ch": "https://www.gwmh-shop.ch",
     "waffenboerse.ch": "https://www.waffenboerse.ch",
     "waffengebraucht.ch": "https://waffengebraucht.ch",
     "waffenzimmi.ch": "https://www.waffenzimmi.ch",

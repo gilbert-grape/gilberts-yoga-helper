@@ -387,6 +387,97 @@ class TestGetLogger:
         assert logger1 is logger2
 
 
+class TestJournaldIntegration:
+    """Tests for journald/systemd integration."""
+
+    @pytest.fixture
+    def temp_log_dir(self, tmp_path):
+        """Create a temporary log directory."""
+        log_dir = tmp_path / "logs"
+        log_dir.mkdir()
+        return log_dir
+
+    @pytest.fixture
+    def mock_settings(self, temp_log_dir):
+        """Create mock settings for testing."""
+        mock = MagicMock()
+        mock.LOG_LEVEL = "INFO"
+        mock.LOG_FILE = str(temp_log_dir / "test.log")
+        mock.LOG_MAX_SIZE = 5 * 1024 * 1024
+        mock.LOG_BACKUP_COUNT = 3
+        mock.DEBUG = False
+        return mock
+
+    def test_console_handler_added_when_use_journald_true(self, mock_settings):
+        """Console handler should be added when USE_JOURNALD=true."""
+        from backend.utils import logging as log_module
+        import sys
+        import os
+
+        with patch.object(log_module, "settings", mock_settings), \
+             patch.dict(os.environ, {"USE_JOURNALD": "true"}):
+            root_logger = logging.getLogger()
+            root_logger.handlers.clear()
+
+            log_module.setup_logging()
+
+            # Check for StreamHandler to stdout
+            stream_handlers = [
+                h for h in root_logger.handlers
+                if isinstance(h, logging.StreamHandler) and h.stream == sys.stdout
+            ]
+            assert len(stream_handlers) == 1, "Should have console handler when USE_JOURNALD=true"
+
+    def test_journald_format_used_when_enabled(self, mock_settings):
+        """Simplified format without timestamp should be used for journald."""
+        from backend.utils import logging as log_module
+        import sys
+        import os
+
+        with patch.object(log_module, "settings", mock_settings), \
+             patch.dict(os.environ, {"USE_JOURNALD": "1"}):
+            root_logger = logging.getLogger()
+            root_logger.handlers.clear()
+
+            log_module.setup_logging()
+
+            # Find the console handler and check its formatter
+            stream_handlers = [
+                h for h in root_logger.handlers
+                if isinstance(h, logging.StreamHandler) and h.stream == sys.stdout
+            ]
+            assert len(stream_handlers) == 1
+
+            handler = stream_handlers[0]
+            # Journald format doesn't include timestamp (asctime)
+            format_str = handler.formatter._fmt
+            assert "%(asctime)s" not in format_str, "Journald format should not include timestamp"
+            assert "%(levelname)s" in format_str, "Journald format should include level"
+
+    def test_no_journald_when_env_false(self, mock_settings):
+        """Console handler should NOT be added when USE_JOURNALD is not set."""
+        from backend.utils import logging as log_module
+        import sys
+        import os
+
+        # Ensure USE_JOURNALD is not set
+        env = {k: v for k, v in os.environ.items() if k != "USE_JOURNALD"}
+
+        with patch.object(log_module, "settings", mock_settings), \
+             patch.dict(os.environ, env, clear=True):
+            root_logger = logging.getLogger()
+            root_logger.handlers.clear()
+
+            log_module.setup_logging()
+
+            # Check for StreamHandler to stdout
+            stream_handlers = [
+                h for h in root_logger.handlers
+                if isinstance(h, logging.StreamHandler) and h.stream == sys.stdout
+            ]
+            assert len(stream_handlers) == 0, "Should have no console handler when USE_JOURNALD not set"
+
+
 class TestLogDirectory:
     """Tests for log directory creation."""
 

@@ -30,15 +30,22 @@ from bs4 import BeautifulSoup
 
 
 # Sample HTML fixtures mimicking waffengebraucht.ch structure
+# Site uses .__ProductItemListener > .__Item.__ItemById_XXXXX structure
 SAMPLE_HTML_SINGLE_LISTING = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/sig-p226-9mm/12345">
-            <img src="/photo/default.png/520/325">
-            <h3 class="title">SIG P226 9mm</h3>
-            <span class="price">1'200CHF</span>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12345">
+            <div class="__ImageView">
+                <img data-src="/photo/gun1.jpg">
+            </div>
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/sig-p226-9mm/12345" title="SIG P226 9mm - Waffengebraucht.ch">SIG P226 9mm</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="1200">
+                <span class="GreenInfo">1'200CHF</span>
+            </div>
+        </div>
     </div>
 </body>
 </html>
@@ -47,25 +54,35 @@ SAMPLE_HTML_SINGLE_LISTING = """
 SAMPLE_HTML_MULTIPLE_LISTINGS = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/sig-p226-9mm/12345">
-            <img src="/photo/gun1.jpg">
-            <h3 class="title">SIG P226 9mm</h3>
-            <span class="price">1'200CHF</span>
-        </a>
-    </div>
-    <div class="item">
-        <a href="/bern/glock-17-gen5/12346">
-            <img src="/photo/gun2.jpg">
-            <h3 class="title">Glock 17 Gen5</h3>
-            <span class="price">850CHF VB</span>
-        </a>
-    </div>
-    <div class="item">
-        <a href="/basel/remington-870/12347">
-            <h3 class="title">Remington 870</h3>
-            <span class="price">Auf Anfrage</span>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12345">
+            <div class="__ImageView">
+                <img data-src="/photo/gun1.jpg">
+            </div>
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/sig-p226-9mm/12345" title="SIG P226 9mm - Waffengebraucht.ch">SIG P226 9mm</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="1200">
+                <span class="GreenInfo">1'200CHF</span>
+            </div>
+        </div>
+        <div class="__Item __ItemById_12346">
+            <div class="__ImageView">
+                <img data-src="/photo/gun2.jpg">
+            </div>
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/bern/glock-17-gen5/12346" title="Glock 17 Gen5 - Waffengebraucht.ch">Glock 17 Gen5</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="850">
+                <span class="GreenInfo">850CHF VB</span>
+            </div>
+        </div>
+        <div class="__Item __ItemById_12347">
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/basel/remington-870/12347" title="Remington 870 - Waffengebraucht.ch">Remington 870</a>
+            </div>
+            <span>Auf Anfrage</span>
+        </div>
     </div>
 </body>
 </html>
@@ -84,11 +101,13 @@ SAMPLE_HTML_NO_LISTINGS = """
 SAMPLE_HTML_WITH_PAGINATION = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/test-gun/12345">
-            <h3 class="title">Test Gun</h3>
-            <span class="price">500CHF</span>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12345">
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/test-gun/12345" title="Test Gun - Waffengebraucht.ch">Test Gun</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="500">500CHF</div>
+        </div>
     </div>
     <div class="pagination">
         <a href="?&page=1">Erste</a>
@@ -103,12 +122,16 @@ SAMPLE_HTML_WITH_PAGINATION = """
 SAMPLE_HTML_RELATIVE_URLS = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/test-item/12345">
-            <img src="../photo/photo.jpg">
-            <h3 class="title">Test Item</h3>
-            <span class="price">100CHF</span>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12345">
+            <div class="__ImageView">
+                <img data-src="/photo/photo.jpg">
+            </div>
+            <div class="__ProductTitle">
+                <a href="/zuerich/test-item/12345" title="Test Item - Waffengebraucht.ch">Test Item</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="100">100CHF</div>
+        </div>
     </div>
 </body>
 </html>
@@ -117,11 +140,15 @@ SAMPLE_HTML_RELATIVE_URLS = """
 SAMPLE_HTML_MISSING_PRICE = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/sig-p226/12345">
-            <img src="/photo/gun1.jpg">
-            <h3 class="title">SIG P226</h3>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12345">
+            <div class="__ImageView">
+                <img data-src="/photo/gun1.jpg">
+            </div>
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/sig-p226/12345" title="SIG P226 - Waffengebraucht.ch">SIG P226</a>
+            </div>
+        </div>
     </div>
 </body>
 </html>
@@ -130,11 +157,13 @@ SAMPLE_HTML_MISSING_PRICE = """
 SAMPLE_HTML_MISSING_IMAGE = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/sig-p226/12345">
-            <h3 class="title">SIG P226</h3>
-            <span class="price">1'200CHF</span>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12345">
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/sig-p226/12345" title="SIG P226 - Waffengebraucht.ch">SIG P226</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="1200">1'200CHF</div>
+        </div>
     </div>
 </body>
 </html>
@@ -143,13 +172,13 @@ SAMPLE_HTML_MISSING_IMAGE = """
 SAMPLE_HTML_ALT_STRUCTURE = """
 <html>
 <body>
-    <article class="inserat">
-        <a href="/bern/browning-hi-power/12348" class="detail-link">
+    <div class="__ItemById_12348">
+        <a href="https://waffengebraucht.ch/bern/browning-hi-power/12348" title="Browning Hi-Power - Waffengebraucht.ch">
             <img data-src="/photo/lazy.jpg">
-            <h2>Browning Hi-Power</h2>
-            <div class="preis">2.500CHF</div>
+            Browning Hi-Power
         </a>
-    </article>
+        <span class="GreenInfo">2'500CHF</span>
+    </div>
 </body>
 </html>
 """
@@ -157,11 +186,15 @@ SAMPLE_HTML_ALT_STRUCTURE = """
 SAMPLE_HTML_PRICE_VB = """
 <html>
 <body>
-    <div class="item">
-        <a href="/zuerich/glock-19/12349">
-            <h3 class="title">Glock 19</h3>
-            <span class="price">1.550CHF VB</span>
-        </a>
+    <div class="__ProductItemListener">
+        <div class="__Item __ItemById_12349">
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/glock-19/12349" title="Glock 19 - Waffengebraucht.ch">Glock 19</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="1550">
+                <span class="GreenInfo">1.550CHF VB</span>
+            </div>
+        </div>
     </div>
 </body>
 </html>
@@ -185,9 +218,9 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
-        # One listing per category, but same HTML so we get 2 listings total
         assert len(results) >= 1
         assert results[0]["title"] == "SIG P226 9mm"
         assert results[0]["price"] == 1200.0
@@ -208,9 +241,9 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
-        # 3 listings per category, 2 categories = 6 total
         assert len(results) >= 3
         titles = [r["title"] for r in results]
         assert "SIG P226 9mm" in titles
@@ -231,7 +264,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         # Find the Remington listing which has "Auf Anfrage"
         remington_listings = [r for r in results if "Remington" in r["title"]]
@@ -252,7 +286,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert len(results) >= 1
         assert results[0]["price"] is None
@@ -271,7 +306,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert len(results) >= 1
         assert results[0]["image_url"] is None
@@ -290,7 +326,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert len(results) >= 1
         # URLs should be absolute
@@ -311,7 +348,8 @@ class TestScrapeWaffengebraucht:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
-            results = await scrape_waffengebraucht()
+            with patch("backend.services.crawler.add_crawl_log"):
+                results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert results == []
 
@@ -324,7 +362,8 @@ class TestScrapeWaffengebraucht:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
-            results = await scrape_waffengebraucht()
+            with patch("backend.services.crawler.add_crawl_log"):
+                results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert results == []
 
@@ -338,7 +377,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.logger") as mock_logger:
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert results == []
         mock_logger.error.assert_called_once()
@@ -358,7 +398,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert results == []
 
@@ -376,7 +417,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert results[0]["source"] == "waffengebraucht.ch"
 
@@ -394,7 +436,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert len(results) >= 1
         assert results[0]["title"] == "Browning Hi-Power"
@@ -414,7 +457,8 @@ class TestScrapeWaffengebraucht:
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         assert len(results) >= 1
         assert results[0]["price"] == 1550.0
@@ -434,7 +478,8 @@ class TestScrapeWaffengebraucht:
         search_terms = ["Glock", "SIG"]
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                await scrape_waffengebraucht(search_terms=search_terms)
+                with patch("backend.services.crawler.add_crawl_log"):
+                    await scrape_waffengebraucht(search_terms=search_terms)
 
         # Should have been called at least once per search term
         assert mock_client.get.call_count >= len(search_terms)
@@ -445,8 +490,13 @@ class TestScrapeWaffengebraucht:
         page1_html = """
         <html>
         <body>
-            <div class="item">
-                <a href="/zuerich/gun-1/1"><h3 class="title">Gun 1</h3><span class="price">100CHF</span></a>
+            <div class="__ProductItemListener">
+                <div class="__Item __ItemById_1">
+                    <div class="__ProductTitle">
+                        <a href="https://waffengebraucht.ch/zuerich/gun-1/1" title="Gun 1 - Waffengebraucht.ch">Gun 1</a>
+                    </div>
+                    <div class="__SetPriceRequest" data-price="100">100CHF</div>
+                </div>
             </div>
             <div class="pagination">
                 <a href="?&page=1">Erste</a>
@@ -459,8 +509,13 @@ class TestScrapeWaffengebraucht:
         page2_html = """
         <html>
         <body>
-            <div class="item">
-                <a href="/zuerich/gun-2/2"><h3 class="title">Gun 2</h3><span class="price">200CHF</span></a>
+            <div class="__ProductItemListener">
+                <div class="__Item __ItemById_2">
+                    <div class="__ProductTitle">
+                        <a href="https://waffengebraucht.ch/zuerich/gun-2/2" title="Gun 2 - Waffengebraucht.ch">Gun 2</a>
+                    </div>
+                    <div class="__SetPriceRequest" data-price="200">200CHF</div>
+                </div>
             </div>
         </body>
         </html>
@@ -474,18 +529,17 @@ class TestScrapeWaffengebraucht:
         mock_response_page2.text = page2_html
         mock_response_page2.raise_for_status = MagicMock()
 
-        # Simulate: page1 for kurzwaffen, page2 for kurzwaffen, page1 for langwaffen (no pagination)
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(side_effect=[
-            mock_response_page1, mock_response_page2,  # kurzwaffen pages
-            mock_response_page2  # langwaffen (same response, no pagination)
+            mock_response_page1, mock_response_page2
         ])
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffengebraucht.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffengebraucht.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffengebraucht()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffengebraucht(search_terms=["Glock"])
 
         # Should have listings from multiple pages
         titles = [r["title"] for r in results]
@@ -496,23 +550,31 @@ class TestScrapeWaffengebraucht:
 class TestExtractTitle:
     """Tests for _extract_title helper function."""
 
+    def test_extracts_title_from_product_title(self):
+        """Extract title from .__ProductTitle element."""
+        html = '''<div class="__Item">
+            <div class="__ProductTitle">
+                <a href="/test/item/123" title="Test Gun - Waffengebraucht.ch">Test Gun</a>
+            </div>
+        </div>'''
+        soup = BeautifulSoup(html, "lxml")
+        listing = soup.select_one(".__Item")
+        assert _extract_title(listing) == "Test Gun"
+
+    def test_extracts_title_from_title_attribute(self):
+        """Extract title from anchor title attribute."""
+        html = '''<div class="__Item">
+            <div class="__ProductTitle">
+                <a href="/test/item/123" title="My Gun - Waffengebraucht.ch"></a>
+            </div>
+        </div>'''
+        soup = BeautifulSoup(html, "lxml")
+        listing = soup.select_one(".__Item")
+        assert _extract_title(listing) == "My Gun"
+
     def test_extracts_title_from_title_class(self):
-        """Extract title from element with class 'title'."""
-        html = '<div class="item"><h3 class="title">Test Gun</h3></div>'
-        soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
-        assert _extract_title(listing) == "Test Gun"
-
-    def test_extracts_title_from_h2(self):
-        """Extract title from h2 element."""
-        html = '<div class="item"><h2>Test Gun</h2></div>'
-        soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
-        assert _extract_title(listing) == "Test Gun"
-
-    def test_extracts_title_from_h3(self):
-        """Extract title from h3 element."""
-        html = '<div class="item"><h3>Test Gun</h3></div>'
+        """Extract title from .title element (fallback)."""
+        html = '<div class="item"><div class="title">Test Gun</div></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         assert _extract_title(listing) == "Test Gun"
@@ -536,30 +598,30 @@ class TestExtractTitle:
 class TestExtractPrice:
     """Tests for _extract_price helper function."""
 
-    def test_extracts_price_from_price_class(self):
-        """Extract price from element with class 'price'."""
-        html = '<div class="item"><span class="price">1\'200CHF</span></div>'
+    def test_extracts_price_from_data_price(self):
+        """Extract price from data-price attribute."""
+        html = '<div class="__Item"><div class="__SetPriceRequest" data-price="1200">1\'200CHF</div></div>'
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         assert _extract_price(listing) == 1200.0
 
     def test_extracts_price_with_decimals(self):
         """Extract price with decimal value."""
-        html = '<div class="item"><span class="price">850.50CHF</span></div>'
+        html = '<div class="__Item"><div class="__SetPriceRequest" data-price="850.5">850.50CHF</div></div>'
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         assert _extract_price(listing) == 850.5
 
-    def test_extracts_price_with_dot_thousands_separator(self):
-        """Extract price using dot as thousands separator (1.550CHF)."""
-        html = '<div class="item"><span class="price">1.550CHF</span></div>'
+    def test_extracts_price_from_green_info(self):
+        """Extract price from .GreenInfo element."""
+        html = '<div class="item"><span class="GreenInfo">1\'550CHF</span></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         assert _extract_price(listing) == 1550.0
 
     def test_returns_none_for_auf_anfrage(self):
         """Return None for 'Auf Anfrage'."""
-        html = '<div class="item"><span class="price">Auf Anfrage</span></div>'
+        html = '<div class="item"><span class="GreenInfo">Auf Anfrage</span></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         assert _extract_price(listing) is None
@@ -571,9 +633,9 @@ class TestExtractPrice:
         listing = soup.select_one(".item")
         assert _extract_price(listing) is None
 
-    def test_extracts_price_from_preis_class(self):
-        """Extract price from element with class 'preis' (German)."""
-        html = '<div class="item"><div class="preis">2\'500CHF</div></div>'
+    def test_extracts_price_from_price_class(self):
+        """Extract price from element with class 'price' (fallback)."""
+        html = '<div class="item"><div class="price">2\'500CHF</div></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         assert _extract_price(listing) == 2500.0
@@ -587,7 +649,7 @@ class TestExtractPrice:
 
     def test_handles_price_with_vb_suffix(self):
         """Handle prices with VB (Verhandlungsbasis) suffix."""
-        html = '<div class="item"><span class="price">1.550CHF VB</span></div>'
+        html = '<div class="item">1.550CHF VB</div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         assert _extract_price(listing) == 1550.0
@@ -596,19 +658,27 @@ class TestExtractPrice:
 class TestExtractLink:
     """Tests for _extract_link helper function."""
 
-    def test_extracts_link_with_location_pattern(self):
-        """Extract link matching /location/item/id pattern."""
-        html = '<div class="item"><a href="/zuerich/sig-p226/12345">Link</a></div>'
+    def test_extracts_link_from_product_title(self):
+        """Extract link from .__ProductTitle a element."""
+        html = '''<div class="__Item">
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/sig-p226/12345">Link</a>
+            </div>
+        </div>'''
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         link = _extract_link(listing)
-        assert link == f"{BASE_URL}/zuerich/sig-p226/12345"
+        assert link == "https://waffengebraucht.ch/zuerich/sig-p226/12345"
 
     def test_converts_relative_link_to_absolute(self):
         """Convert relative link to absolute URL."""
-        html = '<div class="item"><a href="/bern/glock-17/12346">Link</a></div>'
+        html = '''<div class="__Item">
+            <div class="__ProductTitle">
+                <a href="/bern/glock-17/12346">Link</a>
+            </div>
+        </div>'''
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         link = _extract_link(listing)
         assert link.startswith("https://")
 
@@ -621,27 +691,31 @@ class TestExtractLink:
 
     def test_handles_absolute_url(self):
         """Handle already absolute URLs."""
-        html = '<div class="item"><a href="https://www.waffengebraucht.ch/test/item/123">Link</a></div>'
+        html = '<div class="item"><a href="https://waffengebraucht.ch/test/item/123">Link</a></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         link = _extract_link(listing)
-        assert link == "https://www.waffengebraucht.ch/test/item/123"
+        assert link == "https://waffengebraucht.ch/test/item/123"
 
 
 class TestExtractImageUrl:
     """Tests for _extract_image_url helper function."""
 
-    def test_extracts_image_from_src(self):
-        """Extract image URL from src attribute."""
-        html = '<div class="item"><img src="/photo/gun.jpg"></div>'
+    def test_extracts_image_from_image_view(self):
+        """Extract image URL from .__ImageView img element."""
+        html = '''<div class="__Item">
+            <div class="__ImageView">
+                <img data-src="/photo/gun.jpg">
+            </div>
+        </div>'''
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         image_url = _extract_image_url(listing)
         assert image_url == f"{BASE_URL}/photo/gun.jpg"
 
     def test_extracts_image_from_data_src(self):
         """Extract image URL from data-src attribute (lazy loading)."""
-        html = '<div class="item"><img data-src="/photo/lazy.jpg"></div>'
+        html = '<div class="item"><img class="lazyload" data-src="/photo/lazy.jpg"></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         image_url = _extract_image_url(listing)
@@ -654,9 +728,9 @@ class TestExtractImageUrl:
         listing = soup.select_one(".item")
         assert _extract_image_url(listing) is None
 
-    def test_skips_placeholder_images(self):
-        """Skip images that are placeholders."""
-        html = '<div class="item"><img src="/images/placeholder.gif"></div>'
+    def test_skips_default_placeholder_images(self):
+        """Skip images that are default placeholders."""
+        html = '<div class="item"><img src="/images/default.png"></div>'
         soup = BeautifulSoup(html, "lxml")
         listing = soup.select_one(".item")
         assert _extract_image_url(listing) is None
@@ -705,16 +779,18 @@ class TestParseListing:
     def test_parses_complete_listing(self):
         """Parse a listing with all fields."""
         html = """
-        <div class="item">
-            <a href="/zuerich/test-gun/12345">
-                <img src="/photo/gun.jpg">
-                <h3 class="title">Test Gun</h3>
-                <span class="price">1'000CHF</span>
-            </a>
+        <div class="__Item __ItemById_12345">
+            <div class="__ImageView">
+                <img data-src="/photo/gun.jpg">
+            </div>
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/test-gun/12345" title="Test Gun - Waffengebraucht.ch">Test Gun</a>
+            </div>
+            <div class="__SetPriceRequest" data-price="1000">1'000CHF</div>
         </div>
         """
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         result = _parse_listing(listing)
 
         assert result is not None
@@ -726,31 +802,31 @@ class TestParseListing:
 
     def test_returns_none_for_missing_title(self):
         """Return None when title is missing."""
-        html = '<div class="item"><a href="/zuerich/item/12345"></a></div>'
+        html = '<div class="__Item"><a href="/zuerich/item/12345"></a></div>'
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         result = _parse_listing(listing)
         assert result is None
 
     def test_returns_none_for_missing_link(self):
         """Return None when link is missing."""
-        html = '<div class="item"><h3 class="title">Test</h3></div>'
+        html = '<div class="__Item"><div class="title">Test</div></div>'
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         result = _parse_listing(listing)
         assert result is None
 
     def test_handles_partial_data(self):
         """Handle listing with only required fields (title, link)."""
         html = """
-        <div class="item">
-            <a href="/zuerich/test-gun/12345">
-                <h3 class="title">Test Gun</h3>
-            </a>
+        <div class="__Item">
+            <div class="__ProductTitle">
+                <a href="https://waffengebraucht.ch/zuerich/test-gun/12345" title="Test Gun - Waffengebraucht.ch">Test Gun</a>
+            </div>
         </div>
         """
         soup = BeautifulSoup(html, "lxml")
-        listing = soup.select_one(".item")
+        listing = soup.select_one(".__Item")
         result = _parse_listing(listing)
 
         assert result is not None

@@ -491,8 +491,8 @@ class TestScrapeWaffenzimmi:
                 </li>
             </ul>
             <nav class="woocommerce-pagination">
-                <a class="page-numbers" href="/produkt-kategorie/waffen/kurzwaffen-waffen/page/2/">2</a>
-                <a class="page-numbers next" href="/produkt-kategorie/waffen/kurzwaffen-waffen/page/2/">→</a>
+                <a class="page-numbers" href="/page/2/?s=Glock">2</a>
+                <a class="page-numbers next" href="/page/2/?s=Glock">→</a>
             </nav>
         </body>
         </html>
@@ -520,18 +520,17 @@ class TestScrapeWaffenzimmi:
         mock_response_page2.text = page2_html
         mock_response_page2.raise_for_status = MagicMock()
 
-        # Simulate: page1 for kurzwaffen, page2 for kurzwaffen, page1 for langwaffen (no pagination)
         mock_client = AsyncMock()
         mock_client.get = AsyncMock(side_effect=[
-            mock_response_page1, mock_response_page2,  # kurzwaffen pages
-            mock_response_page2  # langwaffen (same response, no pagination)
+            mock_response_page1, mock_response_page2
         ])
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["Glock"])
 
         # Should have listings from multiple pages
         titles = [r["title"] for r in results]

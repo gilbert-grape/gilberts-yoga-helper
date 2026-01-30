@@ -56,7 +56,7 @@ class TestGetUserAgent:
     def test_contains_scraper_identifier(self):
         """User-Agent should identify the scraper."""
         ua = get_user_agent()
-        assert "GebrauchtWaffenAggregator" in ua
+        assert "YogaHelper" in ua
 
     def test_looks_like_browser_user_agent(self):
         """User-Agent should look like a browser to avoid blocking."""
