@@ -78,32 +78,32 @@ sudo nano /etc/systemd/system/gilberts-gun-crawler.service
 # Enable and start service
 sudo systemctl daemon-reload
 sudo systemctl enable gilberts-gun-crawler
-sudo systemctl start gebrauchtwaffen
+sudo systemctl start gilberts-gun-crawler
 
 # Check status
-sudo systemctl status gebrauchtwaffen
+sudo systemctl status gilberts-gun-crawler
 ```
 
 #### Service Management Commands
 
 ```bash
 # View status
-sudo systemctl status gebrauchtwaffen
+sudo systemctl status gilberts-gun-crawler
 
 # Stop service
-sudo systemctl stop gebrauchtwaffen
+sudo systemctl stop gilberts-gun-crawler
 
 # Start service
-sudo systemctl start gebrauchtwaffen
+sudo systemctl start gilberts-gun-crawler
 
 # Restart service
-sudo systemctl restart gebrauchtwaffen
+sudo systemctl restart gilberts-gun-crawler
 
 # View logs
-sudo journalctl -u gebrauchtwaffen -f
+sudo journalctl -u gilberts-gun-crawler -f
 
 # View last 100 log lines
-sudo journalctl -u gebrauchtwaffen -n 100
+sudo journalctl -u gilberts-gun-crawler -n 100
 ```
 
 ### 5. Configure Daily Crawl (Cron)
@@ -112,13 +112,13 @@ Set up automatic daily crawling at 06:00:
 
 ```bash
 # Option 1: Use the provided cron file
-sudo cp deploy/cron-daily-crawl /etc/cron.d/gebrauchtwaffen-crawl
-sudo chmod 644 /etc/cron.d/gebrauchtwaffen-crawl
+sudo cp deploy/cron-daily-crawl /etc/cron.d/gilberts-gun-crawler-crawl
+sudo chmod 644 /etc/cron.d/gilberts-gun-crawler-crawl
 
 # Option 2: Edit user crontab manually
 crontab -e
 # Add line:
-0 6 * * * cd /home/pi/gilberts-gun-crawler && /home/pi/gilberts-gun-crawler/.venv/bin/python -m backend.cli crawl >> /var/log/gebrauchtwaffen-crawl.log 2>&1
+0 6 * * * cd /home/pi/gilberts-gun-crawler && /home/pi/gilberts-gun-crawler/.venv/bin/python -m backend.cli crawl >> /var/log/gilberts-gun-crawler-crawl.log 2>&1
 ```
 
 #### Manual Crawl
@@ -138,13 +138,13 @@ Weekly backups with 4-backup rotation:
 chmod +x deploy/backup-database.sh
 
 # Option 1: Use provided cron file
-sudo cp deploy/cron-weekly-backup /etc/cron.d/gebrauchtwaffen-backup
-sudo chmod 644 /etc/cron.d/gebrauchtwaffen-backup
+sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-gun-crawler-backup
+sudo chmod 644 /etc/cron.d/gilberts-gun-crawler-backup
 
 # Option 2: Add to root crontab
 sudo crontab -e
 # Add line (runs Sunday 02:00):
-0 2 * * 0 /home/pi/gilberts-gun-crawler/deploy/backup-database.sh >> /var/log/gebrauchtwaffen-backup.log 2>&1
+0 2 * * 0 /home/pi/gilberts-gun-crawler/deploy/backup-database.sh >> /var/log/gilberts-gun-crawler-backup.log 2>&1
 ```
 
 #### Manual Backup
@@ -161,13 +161,13 @@ ls -la ~/gilberts-gun-crawler/data/backups/
 
 ```bash
 # Stop service first
-sudo systemctl stop gebrauchtwaffen
+sudo systemctl stop gilberts-gun-crawler
 
 # Copy backup to database location
-cp data/backups/gebrauchtwaffen_20240115_020000.db data/gebrauchtwaffen.db
+cp data/backups/gilberts-gun-crawler_20240115_020000.db data/gilberts-gun-crawler.db
 
 # Restart service
-sudo systemctl start gebrauchtwaffen
+sudo systemctl start gilberts-gun-crawler
 ```
 
 ## Configuration
@@ -188,7 +188,7 @@ sudo systemctl start gebrauchtwaffen
 Edit the systemd service file to change environment variables:
 
 ```bash
-sudo systemctl edit gebrauchtwaffen
+sudo systemctl edit gilberts-gun-crawler
 ```
 
 Add overrides:
@@ -200,7 +200,7 @@ Environment=LOG_LEVEL=DEBUG
 Then reload:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart gebrauchtwaffen
+sudo systemctl restart gilberts-gun-crawler
 ```
 
 ## Monitoring
@@ -209,16 +209,16 @@ sudo systemctl restart gebrauchtwaffen
 
 ```bash
 # Service status
-sudo systemctl status gebrauchtwaffen
+sudo systemctl status gilberts-gun-crawler
 
 # Recent logs
-sudo journalctl -u gebrauchtwaffen -n 50
+sudo journalctl -u gilberts-gun-crawler -n 50
 
 # Follow logs in real-time
-sudo journalctl -u gebrauchtwaffen -f
+sudo journalctl -u gilberts-gun-crawler -f
 
 # Check crawl logs
-tail -f /var/log/gebrauchtwaffen-crawl.log
+tail -f /var/log/gilberts-gun-crawler-crawl.log
 ```
 
 ### Check Resource Usage
@@ -231,7 +231,7 @@ htop
 df -h
 
 # Database size
-ls -lh ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
+ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
 ```
 
 ## Troubleshooting
@@ -240,7 +240,7 @@ ls -lh ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
 
 1. Check logs:
    ```bash
-   sudo journalctl -u gebrauchtwaffen -n 100 --no-pager
+   sudo journalctl -u gilberts-gun-crawler -n 100 --no-pager
    ```
 
 2. Verify paths in service file:
@@ -269,19 +269,19 @@ ls -lh ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
 
 3. Check database integrity:
    ```bash
-   sqlite3 data/gebrauchtwaffen.db "PRAGMA integrity_check;"
+   sqlite3 data/gilberts-gun-crawler.db "PRAGMA integrity_check;"
    ```
 
 ### Crawl Not Running
 
 1. Check cron is installed:
    ```bash
-   cat /etc/cron.d/gebrauchtwaffen-crawl
+   cat /etc/cron.d/gilberts-gun-crawler-crawl
    ```
 
 2. Check cron logs:
    ```bash
-   grep gebrauchtwaffen /var/log/syslog
+   grep gilberts-gun-crawler /var/log/syslog
    ```
 
 3. Test crawl manually:
@@ -302,7 +302,7 @@ ls -lh ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
    ```bash
    sudo chown -R pi:pi ~/gilberts-gun-crawler
    chmod 755 ~/gilberts-gun-crawler/data
-   chmod 644 ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
+   chmod 644 ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
    ```
 
 ### Network/Scraper Issues
