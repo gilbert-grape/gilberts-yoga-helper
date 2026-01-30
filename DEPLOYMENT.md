@@ -36,11 +36,11 @@ source ~/.bashrc
 ```bash
 # Clone repository
 cd ~
-git clone https://github.com/your-repo/gebrauchtwaffen-aggregator.git gebrauchtwaffen_aggregator
-cd gebrauchtwaffen_aggregator
+git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git gilberts-gun-crawler
+cd gilberts-gun-crawler
 
 # Create virtual environment and install dependencies
-poetry install --no-dev
+poetry install --only main
 
 # Create required directories
 mkdir -p data logs data/backups
@@ -70,14 +70,14 @@ The systemd service ensures the application:
 
 ```bash
 # Copy service file
-sudo cp deploy/gebrauchtwaffen.service /etc/systemd/system/
+sudo cp deploy/gilberts-gun-crawler.service /etc/systemd/system/
 
-# Adjust paths if needed (default assumes /home/pi/gebrauchtwaffen_aggregator)
-sudo nano /etc/systemd/system/gebrauchtwaffen.service
+# Adjust paths if needed (default assumes /home/pi/gilberts-gun-crawler)
+sudo nano /etc/systemd/system/gilberts-gun-crawler.service
 
 # Enable and start service
 sudo systemctl daemon-reload
-sudo systemctl enable gebrauchtwaffen
+sudo systemctl enable gilberts-gun-crawler
 sudo systemctl start gebrauchtwaffen
 
 # Check status
@@ -118,14 +118,14 @@ sudo chmod 644 /etc/cron.d/gebrauchtwaffen-crawl
 # Option 2: Edit user crontab manually
 crontab -e
 # Add line:
-0 6 * * * cd /home/pi/gebrauchtwaffen_aggregator && /home/pi/gebrauchtwaffen_aggregator/.venv/bin/python -m backend.cli crawl >> /var/log/gebrauchtwaffen-crawl.log 2>&1
+0 6 * * * cd /home/pi/gilberts-gun-crawler && /home/pi/gilberts-gun-crawler/.venv/bin/python -m backend.cli crawl >> /var/log/gebrauchtwaffen-crawl.log 2>&1
 ```
 
 #### Manual Crawl
 
 ```bash
 # Run crawl manually
-cd ~/gebrauchtwaffen_aggregator
+cd ~/gilberts-gun-crawler
 poetry run python -m backend.cli crawl
 ```
 
@@ -144,17 +144,17 @@ sudo chmod 644 /etc/cron.d/gebrauchtwaffen-backup
 # Option 2: Add to root crontab
 sudo crontab -e
 # Add line (runs Sunday 02:00):
-0 2 * * 0 /home/pi/gebrauchtwaffen_aggregator/deploy/backup-database.sh >> /var/log/gebrauchtwaffen-backup.log 2>&1
+0 2 * * 0 /home/pi/gilberts-gun-crawler/deploy/backup-database.sh >> /var/log/gebrauchtwaffen-backup.log 2>&1
 ```
 
 #### Manual Backup
 
 ```bash
 # Run backup manually
-~/gebrauchtwaffen_aggregator/deploy/backup-database.sh
+~/gilberts-gun-crawler/deploy/backup-database.sh
 
 # List backups
-ls -la ~/gebrauchtwaffen_aggregator/data/backups/
+ls -la ~/gilberts-gun-crawler/data/backups/
 ```
 
 #### Restore from Backup
@@ -231,7 +231,7 @@ htop
 df -h
 
 # Database size
-ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
+ls -lh ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
 ```
 
 ## Troubleshooting
@@ -245,12 +245,12 @@ ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
 
 2. Verify paths in service file:
    ```bash
-   cat /etc/systemd/system/gebrauchtwaffen.service
+   cat /etc/systemd/system/gilberts-gun-crawler.service
    ```
 
 3. Test manually:
    ```bash
-   cd ~/gebrauchtwaffen_aggregator
+   cd ~/gilberts-gun-crawler
    poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000
    ```
 
@@ -258,12 +258,12 @@ ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
 
 1. Check database exists:
    ```bash
-   ls -la ~/gebrauchtwaffen_aggregator/data/
+   ls -la ~/gilberts-gun-crawler/data/
    ```
 
 2. Run migrations:
    ```bash
-   cd ~/gebrauchtwaffen_aggregator
+   cd ~/gilberts-gun-crawler
    poetry run alembic upgrade head
    ```
 
@@ -286,7 +286,7 @@ ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
 
 3. Test crawl manually:
    ```bash
-   cd ~/gebrauchtwaffen_aggregator
+   cd ~/gilberts-gun-crawler
    poetry run python -m backend.cli crawl
    ```
 
@@ -294,15 +294,15 @@ ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
 
 1. Check ownership:
    ```bash
-   ls -la ~/gebrauchtwaffen_aggregator/
-   ls -la ~/gebrauchtwaffen_aggregator/data/
+   ls -la ~/gilberts-gun-crawler/
+   ls -la ~/gilberts-gun-crawler/data/
    ```
 
 2. Fix permissions:
    ```bash
-   sudo chown -R pi:pi ~/gebrauchtwaffen_aggregator
-   chmod 755 ~/gebrauchtwaffen_aggregator/data
-   chmod 644 ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
+   sudo chown -R pi:pi ~/gilberts-gun-crawler
+   chmod 755 ~/gilberts-gun-crawler/data
+   chmod 644 ~/gilberts-gun-crawler/data/gebrauchtwaffen.db
    ```
 
 ### Network/Scraper Issues
@@ -314,7 +314,7 @@ ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
 
 2. Test scraper manually:
    ```bash
-   cd ~/gebrauchtwaffen_aggregator
+   cd ~/gilberts-gun-crawler
    poetry run python -c "from backend.scrapers import scrape_waffenboerse; import asyncio; print(asyncio.run(scrape_waffenboerse())[:2])"
    ```
 
@@ -324,20 +324,24 @@ ls -lh ~/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db
 
 ```bash
 # Stop service
-sudo systemctl stop gebrauchtwaffen
+sudo systemctl stop gilberts-gun-crawler
 
 # Pull latest code
-cd ~/gebrauchtwaffen_aggregator
+cd ~/gilberts-gun-crawler
+git pull
+
+# If git pull fails due to poetry.lock conflict:
+git checkout -- poetry.lock
 git pull
 
 # Update dependencies
-poetry install --no-dev
+poetry install --only main
 
 # Run migrations
 poetry run alembic upgrade head
 
 # Restart service
-sudo systemctl start gebrauchtwaffen
+sudo systemctl start gilberts-gun-crawler
 ```
 
 ## Security Notes
@@ -359,12 +363,10 @@ sudo ufw enable
 
 | Path | Description |
 |------|-------------|
-| `/home/pi/gebrauchtwaffen_aggregator/` | Application root |
-| `/home/pi/gebrauchtwaffen_aggregator/data/gebrauchtwaffen.db` | SQLite database |
-| `/home/pi/gebrauchtwaffen_aggregator/data/backups/` | Database backups |
-| `/home/pi/gebrauchtwaffen_aggregator/logs/app.log` | Application logs |
-| `/etc/systemd/system/gebrauchtwaffen.service` | Systemd service |
-| `/etc/cron.d/gebrauchtwaffen-crawl` | Daily crawl cron |
-| `/etc/cron.d/gebrauchtwaffen-backup` | Weekly backup cron |
-| `/var/log/gebrauchtwaffen-crawl.log` | Crawl command logs |
-| `/var/log/gebrauchtwaffen-backup.log` | Backup script logs |
+| `~/gilberts-gun-crawler/` | Application root |
+| `~/gilberts-gun-crawler/data/app.db` | SQLite database |
+| `~/gilberts-gun-crawler/data/backups/` | Database backups |
+| `~/gilberts-gun-crawler/logs/app.log` | Application logs |
+| `/etc/systemd/system/gilberts-gun-crawler.service` | Systemd service |
+| `/etc/cron.d/gilberts-gun-crawler-crawl` | Daily crawl cron |
+| `/etc/cron.d/gilberts-gun-crawler-backup` | Weekly backup cron |
