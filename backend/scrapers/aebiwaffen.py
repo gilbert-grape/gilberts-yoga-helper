@@ -125,40 +125,28 @@ def _is_available(listing: Tag) -> bool:
     """
     Check if item is available (not ordered/bestellt).
 
-    Items with a blue circle showing "0" are ordered but not available.
+    Items with status "BLAU" (blue) and "0" are ordered but not available.
     Returns True if available, False if ordered (availability = 0).
     """
-    # Look for availability indicator - typically a badge/circle with a number
-    # Common patterns: span with number, badge element, availability class
-    availability_selectors = [
-        ".availability",
-        ".stock",
-        ".badge",
-        "span.circle",
-        "[class*='available']",
-        "[class*='stock']",
-    ]
+    # Check 1: Listing element has class "lager-status-BLAU" (blue = ordered)
+    listing_classes = listing.get("class", [])
+    if listing_classes:
+        class_str = " ".join(listing_classes)
+        if "lager-status-BLAU" in class_str:
+            return False
 
-    for selector in availability_selectors:
-        elem = listing.select_one(selector)
-        if elem:
-            text = elem.get_text(strip=True)
-            # If it shows "0", item is not available
-            if text == "0":
-                return False
+    # Check 2: Look for the blue availability indicator div
+    # Structure: <div class="lager BLAU" title="Bestellt"><span>0</span></div>
+    lager_elem = listing.select_one("div.lager.BLAU, div.lager[title='Bestellt']")
+    if lager_elem:
+        return False
 
-    # Also check for any element that just contains "0" as availability indicator
-    # Look for small text elements that might be the blue circle
-    for elem in listing.select("span, div"):
-        text = elem.get_text(strip=True)
-        # Check if this is just a "0" (availability indicator)
+    # Check 3: Look for dyn-bestandtext span with "0"
+    bestand_elem = listing.select_one(".dyn-bestandtext, .bestandtext")
+    if bestand_elem:
+        text = bestand_elem.get_text(strip=True)
         if text == "0":
-            # Verify it's likely an availability indicator (small element, not price)
-            classes = elem.get("class", [])
-            class_str = " ".join(classes) if classes else ""
-            # Skip if it's clearly part of a price
-            if "price" not in class_str.lower():
-                return False
+            return False
 
     return True
 
