@@ -25,6 +25,7 @@ from backend.utils.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://www.gwmh-shop.ch"
+SHOP_BASE_URL = "https://www.gwmh-shop.ch/epages/64344916.sf/de_CH"
 # JSONP search API endpoint - returns product suggestions
 SEARCH_API_URL = "https://epj.strato.de/rs/product/Store10/517C2170-49A9-4C07-3C8F-C0A829C0B1AA/suggest/jsonp"
 SOURCE_NAME = "gwmh-shop.ch"
@@ -99,8 +100,8 @@ async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResult
 
                         seen_aliases.add(alias)
 
-                        # Build product detail URL
-                        product_url = f"{BASE_URL}/?ObjectPath=/Shops/64344916/Products/{alias}"
+                        # Build product detail URL using the correct epages format
+                        product_url = f"{SHOP_BASE_URL}/?ObjectPath=/Shops/64344916/Products/{alias}"
 
                         try:
                             # Fetch product page to get price
@@ -109,9 +110,9 @@ async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResult
 
                             price = _extract_price_from_page(detail_response.text)
 
-                            # Build image URL
+                            # Build image URL - images are served from the base URL (not epages path)
                             image_path = product.get("image", "")
-                            image_url = make_absolute_url(BASE_URL, image_path) if image_path else None
+                            image_url = f"{BASE_URL}{image_path}" if image_path else None
 
                             result = ScraperResult(
                                 title=product.get("name", ""),
