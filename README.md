@@ -75,13 +75,39 @@ mkdir -p data logs
 
 z.B. installieren in `/home/pi/gilberts-gun-crawler` (oder `/opt/` für system-weite Installation)
 
-```bash
-# Update system and install dependencies
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y python3 python3-pip python3-venv git sqlite3
+**Wichtig:** Dieses Projekt benötigt **Python 3.11+**. Viele Raspberry Pis haben ältere Versionen vorinstalliert. Prüfe mit `python3 --version`.
 
-# Install Poetry
-curl -sSL https://install.python-poetry.org | python3 -
+```bash
+# Update system and install base dependencies
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git sqlite3
+```
+
+**Falls Python < 3.11, installiere Python 3.11 (dauert ca. 15-30 Min):**
+
+```bash
+# Build-Dependencies für Python
+sudo apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev \
+  libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+
+# Python 3.11 herunterladen und kompilieren
+cd /tmp
+wget https://www.python.org/ftp/python/3.11.9/Python-3.11.9.tgz
+tar -xf Python-3.11.9.tgz
+cd Python-3.11.9
+./configure --enable-optimizations
+make -j4
+sudo make altinstall
+
+# Prüfen
+python3.11 --version
+```
+
+**Poetry und Projekt installieren:**
+
+```bash
+# Install Poetry (mit Python 3.11)
+curl -sSL https://install.python-poetry.org | python3.11 -
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
@@ -90,7 +116,8 @@ cd ~
 git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git
 cd gilberts-gun-crawler
 
-# Install dependencies (without dev dependencies for production)
+# Poetry auf Python 3.11 setzen und Dependencies installieren
+poetry env use python3.11
 poetry install --no-dev
 
 # Create required directories
