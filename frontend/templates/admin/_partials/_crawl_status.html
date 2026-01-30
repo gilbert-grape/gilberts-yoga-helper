@@ -137,7 +137,7 @@
     <div id="content-current" class="tab-content p-6">
         <h3 class="text-md font-semibold text-gray-900 mb-3">Live-Protokoll</h3>
         {% if log_messages and log_messages|length > 0 %}
-            <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-auto max-h-96">
+            <div id="live-log" class="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-auto max-h-96">
                 {% for msg in log_messages %}
                     <div class="{% if '✓' in msg %}text-green-400{% elif '✗' in msg %}text-red-400{% elif '→' in msg %}text-yellow-400{% else %}text-gray-300{% endif %} py-0.5">{{ msg }}</div>
                 {% endfor %}
@@ -270,4 +270,12 @@ function showTab(tabName) {
     activeTab.classList.remove('border-transparent', 'text-gray-500');
     activeTab.classList.add('border-blue-500', 'text-blue-600');
 }
+
+// Auto-scroll live log to bottom after HTMX updates
+(function() {
+    var log = document.getElementById('live-log');
+    if (log) {
+        log.scrollTop = log.scrollHeight;
+    }
+})();
 </script>
