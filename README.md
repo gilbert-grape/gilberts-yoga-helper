@@ -73,6 +73,8 @@ mkdir -p data logs
 
 #### Raspberry Pi
 
+z.B. installieren in `/home/pi/gilberts-gun-crawler` (oder `/opt/` für system-weite Installation)
+
 ```bash
 # Update system and install dependencies
 sudo apt update && sudo apt upgrade -y
