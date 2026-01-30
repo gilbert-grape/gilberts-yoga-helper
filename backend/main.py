@@ -60,6 +60,7 @@ from backend.database import (
     get_new_match_count,
     mark_matches_as_seen,
     get_all_exclude_terms_sorted,
+    get_active_exclude_terms,
     get_exclude_term_by_id,
     get_exclude_term_by_term,
     create_exclude_term,
@@ -200,7 +201,11 @@ templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
 
 @app.get("/")
-async def dashboard(request: Request, db: Session = Depends(get_db)):
+async def dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+    filter: bool = True,
+):
     """
     Dashboard home page showing all matches grouped by search term.
 
@@ -209,6 +214,11 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     - Count of new (unseen) matches per group and total
     - Empty state for search terms with no matches
     - Duplicate filtering based on hide_seen_matches setting
+    - Exclude term filtering (matches containing exclude terms are hidden)
+
+    Args:
+        filter: If True (default), hide matches containing exclude terms.
+                If False, show all matches including those with exclude terms.
 
     After displaying, marks all matches as seen so they won't
     appear as "new" on the next visit.
@@ -216,7 +226,16 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     # Get all search terms (including those with no matches), sorted by sort_order
     search_terms = get_all_search_terms(db)
 
-    # Build groups with matches, filtering duplicates based on hide_seen_matches
+    # Get active exclude terms for filtering
+    exclude_terms = get_active_exclude_terms(db)
+    exclude_patterns = [et.term.lower() for et in exclude_terms]
+
+    def matches_exclude_term(title: str) -> bool:
+        """Check if a title contains any exclude term (case-insensitive)."""
+        title_lower = title.lower()
+        return any(pattern in title_lower for pattern in exclude_patterns)
+
+    # Build groups with matches, filtering duplicates and optionally exclude terms
     groups = []
     total_count = 0
     total_new_count = 0
@@ -225,14 +244,20 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     for term in search_terms:
         all_matches = get_matches_by_search_term(db, term.id)
 
+        # Filter out matches containing exclude terms (only if filter is enabled)
+        if filter:
+            filtered_matches = [m for m in all_matches if not matches_exclude_term(m.title)]
+        else:
+            filtered_matches = list(all_matches)
+
         # Filter out duplicates if hide_seen_matches is enabled
         if term.hide_seen_matches:
-            matches = [m for m in all_matches if m.url not in seen_urls]
+            matches = [m for m in filtered_matches if m.url not in seen_urls]
         else:
-            matches = all_matches
+            matches = filtered_matches
 
         # Add all match URLs from this term to the seen set (for filtering later terms)
-        for m in all_matches:
+        for m in filtered_matches:
             seen_urls.add(m.url)
 
         new_count = sum(1 for m in matches if m.is_new)
@@ -254,6 +279,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
             "groups": groups,
             "total_count": total_count,
             "new_count": total_new_count,
+            "filter_enabled": filter,
         },
     )
 
