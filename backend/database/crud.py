@@ -660,7 +660,7 @@ def create_exclude_term(
 
 
 # Default exclude terms to create on first startup only
-DEFAULT_EXCLUDE_TERMS = ["CO2", "Airsoft", "Softair"]
+DEFAULT_EXCLUDE_TERMS = ["CO2", "Airsoft", "Softair", "Fussreflex", "Griffschale", "grain", "grs.", "Magazin", "PPSH50"]
 
 
 def ensure_default_exclude_terms(session: Session) -> List[ExcludeTerm]:
