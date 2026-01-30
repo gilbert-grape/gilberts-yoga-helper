@@ -1,11 +1,9 @@
 {# Match Card Partial - displays a single match listing #}
-<div class="match-card bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow">
+<a href="{{ match.url }}" target="_blank" rel="noopener noreferrer" class="match-card block bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
     {# Title - moves to top in compact mode #}
     <div class="match-title-wrapper hidden">
         <h3 class="match-title-top font-semibold text-gray-900 line-clamp-1 text-xs p-1 pb-0">
-            <a href="{{ match.url }}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600">
-                {{ match.title }}
-            </a>
+            {{ match.title }}
         </h3>
     </div>
 
@@ -40,10 +38,8 @@
         {# Content - beside image in compact mode #}
         <div class="match-content p-4">
             {# Title - shown in normal mode, hidden in compact #}
-            <h3 class="match-title font-semibold text-gray-900 mb-1 line-clamp-2">
-                <a href="{{ match.url }}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600">
-                    {{ match.title }}
-                </a>
+            <h3 class="match-title font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-blue-600">
+                {{ match.title }}
             </h3>
 
             {# Price #}
@@ -62,4 +58,4 @@
             </div>
         </div>
     </div>
-</div>
+</a>
