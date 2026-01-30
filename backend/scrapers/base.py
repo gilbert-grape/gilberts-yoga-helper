@@ -11,7 +11,7 @@ Shared utilities for all scrapers including:
 import asyncio
 import random
 import re
-from typing import Optional, TypedDict
+from typing import List, Optional, TypedDict
 from urllib.parse import urljoin
 
 import httpx
@@ -40,7 +40,7 @@ class ScraperResult(TypedDict):
 
 
 # Type alias for list of scraper results
-ScraperResults = list[ScraperResult]
+ScraperResults = List[ScraperResult]
 
 
 def get_user_agent() -> str:
