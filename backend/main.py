@@ -27,6 +27,7 @@ Logging:
 """
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Optional
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -204,7 +205,7 @@ templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 async def dashboard(
     request: Request,
     db: Session = Depends(get_db),
-    filter: bool | None = None,
+    filter: Optional[bool] = None,
 ):
     """
     Dashboard home page showing all matches grouped by search term.
