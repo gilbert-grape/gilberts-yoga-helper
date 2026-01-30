@@ -28,16 +28,17 @@ from bs4 import BeautifulSoup
 
 
 # Sample HTML fixtures mimicking waffenboerse.ch structure
+# The scraper uses article.article-list-item selector
 SAMPLE_HTML_SINGLE_LISTING = """
 <html>
 <body>
-    <div class="inserat-item">
-        <a href="/inserat/123">
-            <img src="/images/gun1.jpg">
-            <h3 class="title">SIG P226</h3>
-            <span class="price">CHF 1'200</span>
+    <article class="article-list-item">
+        <a href="/de/-/123">
+            <div class="article-list-item-image"><img src="/images/gun1.jpg"></div>
+            <div class="article-list-item-title">SIG P226</div>
+            <div class="article-list-item-price">CHF 1'200</div>
         </a>
-    </div>
+    </article>
 </body>
 </html>
 """
@@ -45,26 +46,26 @@ SAMPLE_HTML_SINGLE_LISTING = """
 SAMPLE_HTML_MULTIPLE_LISTINGS = """
 <html>
 <body>
-    <div class="inserat-item">
-        <a href="/inserat/123">
-            <img src="/images/gun1.jpg">
-            <h3 class="title">SIG P226</h3>
-            <span class="price">CHF 1'200</span>
+    <article class="article-list-item">
+        <a href="/de/-/123">
+            <div class="article-list-item-image"><img src="/images/gun1.jpg"></div>
+            <div class="article-list-item-title">SIG P226</div>
+            <div class="article-list-item-price">CHF 1'200</div>
         </a>
-    </div>
-    <div class="inserat-item">
-        <a href="/inserat/456">
-            <img src="/images/gun2.jpg">
-            <h3 class="title">Glock 17</h3>
-            <span class="price">CHF 850.50</span>
+    </article>
+    <article class="article-list-item">
+        <a href="/de/-/456">
+            <div class="article-list-item-image"><img src="/images/gun2.jpg"></div>
+            <div class="article-list-item-title">Glock 17</div>
+            <div class="article-list-item-price">CHF 850.50</div>
         </a>
-    </div>
-    <div class="inserat-item">
-        <a href="/inserat/789">
-            <h3 class="title">Remington 870</h3>
-            <span class="price">Auf Anfrage</span>
+    </article>
+    <article class="article-list-item">
+        <a href="/de/-/789">
+            <div class="article-list-item-title">Remington 870</div>
+            <div class="article-list-item-price">Auf Anfrage</div>
         </a>
-    </div>
+    </article>
 </body>
 </html>
 """
@@ -82,12 +83,12 @@ SAMPLE_HTML_NO_LISTINGS = """
 SAMPLE_HTML_WITH_PAGINATION = """
 <html>
 <body>
-    <div class="inserat-item">
-        <a href="/inserat/123">
-            <h3 class="title">Test Gun</h3>
-            <span class="price">CHF 500</span>
+    <article class="article-list-item">
+        <a href="/de/-/123">
+            <div class="article-list-item-title">Test Gun</div>
+            <div class="article-list-item-price">CHF 500</div>
         </a>
-    </div>
+    </article>
     <div class="pagination">
         <a href="?page=1">1</a>
         <a href="?page=2">2</a>
@@ -100,13 +101,13 @@ SAMPLE_HTML_WITH_PAGINATION = """
 SAMPLE_HTML_RELATIVE_URLS = """
 <html>
 <body>
-    <div class="inserat-item">
-        <a href="../inserat/123">
-            <img src="../images/photo.jpg">
-            <h3 class="title">Test Item</h3>
-            <span class="price">CHF 100</span>
+    <article class="article-list-item">
+        <a href="../de/-/123">
+            <div class="article-list-item-image"><img src="../images/photo.jpg"></div>
+            <div class="article-list-item-title">Test Item</div>
+            <div class="article-list-item-price">CHF 100</div>
         </a>
-    </div>
+    </article>
 </body>
 </html>
 """
@@ -114,12 +115,12 @@ SAMPLE_HTML_RELATIVE_URLS = """
 SAMPLE_HTML_MISSING_PRICE = """
 <html>
 <body>
-    <div class="inserat-item">
-        <a href="/inserat/123">
-            <img src="/images/gun1.jpg">
-            <h3 class="title">SIG P226</h3>
+    <article class="article-list-item">
+        <a href="/de/-/123">
+            <div class="article-list-item-image"><img src="/images/gun1.jpg"></div>
+            <div class="article-list-item-title">SIG P226</div>
         </a>
-    </div>
+    </article>
 </body>
 </html>
 """
@@ -127,12 +128,12 @@ SAMPLE_HTML_MISSING_PRICE = """
 SAMPLE_HTML_MISSING_IMAGE = """
 <html>
 <body>
-    <div class="inserat-item">
-        <a href="/inserat/123">
-            <h3 class="title">SIG P226</h3>
-            <span class="price">CHF 1'200</span>
+    <article class="article-list-item">
+        <a href="/de/-/123">
+            <div class="article-list-item-title">SIG P226</div>
+            <div class="article-list-item-price">CHF 1'200</div>
         </a>
-    </div>
+    </article>
 </body>
 </html>
 """
@@ -140,11 +141,11 @@ SAMPLE_HTML_MISSING_IMAGE = """
 SAMPLE_HTML_ALT_STRUCTURE = """
 <html>
 <body>
-    <article class="inserat">
-        <a href="/inserat/100" class="detail-link">
-            <img data-src="/images/lazy.jpg">
-            <h2>Browning Hi-Power</h2>
-            <div class="preis">Fr. 2'500.-</div>
+    <article class="article-list-item">
+        <a href="/de/-/100" class="detail-link">
+            <div class="article-list-item-image"><img data-src="/images/lazy.jpg"></div>
+            <div class="article-list-item-title">Browning Hi-Power</div>
+            <div class="article-list-item-price">Fr. 2'500.-</div>
         </a>
     </article>
 </body>
@@ -175,7 +176,7 @@ class TestScrapeWaffenboerse:
         assert results[0]["title"] == "SIG P226"
         assert results[0]["price"] == 1200.0
         assert results[0]["source"] == SOURCE_NAME
-        assert results[0]["link"] == f"{BASE_URL}/inserat/123"
+        assert results[0]["link"] == f"{BASE_URL}/de/-/123"
         assert results[0]["image_url"] == f"{BASE_URL}/images/gun1.jpg"
 
     @pytest.mark.asyncio
@@ -386,9 +387,12 @@ class TestScrapeWaffenboerse:
         page1_html = """
         <html>
         <body>
-            <div class="inserat-item">
-                <a href="/inserat/1"><h3 class="title">Gun 1</h3><span class="price">CHF 100</span></a>
-            </div>
+            <article class="article-list-item">
+                <a href="/de/-/1">
+                    <div class="article-list-item-title">Gun 1</div>
+                    <div class="article-list-item-price">CHF 100</div>
+                </a>
+            </article>
             <div class="pagination">
                 <a href="?page=1">1</a>
                 <a href="?page=2">2</a>
@@ -400,9 +404,12 @@ class TestScrapeWaffenboerse:
         page2_html = """
         <html>
         <body>
-            <div class="inserat-item">
-                <a href="/inserat/2"><h3 class="title">Gun 2</h3><span class="price">CHF 200</span></a>
-            </div>
+            <article class="article-list-item">
+                <a href="/de/-/2">
+                    <div class="article-list-item-title">Gun 2</div>
+                    <div class="article-list-item-price">CHF 200</div>
+                </a>
+            </article>
         </body>
         </html>
         """

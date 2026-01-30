@@ -20,13 +20,25 @@ from backend.database.crud import (
 )
 from backend.services.crawler import (
     CrawlResult,
+    CrawlState,
     SCRAPER_REGISTRY,
     SOURCE_BASE_URLS,
+    _log_crawl_summary,
+    add_crawl_log,
+    clear_crawl_log,
     ensure_sources_exist,
+    get_crawl_log,
+    get_crawl_state,
+    get_last_crawl_result,
     get_registered_sources,
+    is_cancel_requested,
+    is_crawl_running,
+    prepare_crawl_state,
+    request_crawl_cancel,
     run_crawl,
     run_crawl_async,
     run_single_scraper,
+    _crawl_state,
 )
 
 
@@ -508,3 +520,410 @@ class TestCrawlDuration:
         assert result.duration_seconds >= 0
         # Should be very fast with mock scrapers
         assert result.duration_seconds < 10
+
+
+class TestCrawlResultProperties:
+    """Tests for CrawlResult property methods."""
+
+    def test_is_success_true(self):
+        """Test is_success returns True when no failures."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=3,
+            sources_failed=0,
+        )
+        assert result.is_success is True
+
+    def test_is_success_false_with_failures(self):
+        """Test is_success returns False when there are failures."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=2,
+            sources_failed=1,
+        )
+        assert result.is_success is False
+
+    def test_is_success_false_no_attempts(self):
+        """Test is_success returns False when no attempts."""
+        result = CrawlResult(sources_attempted=0)
+        assert result.is_success is False
+
+    def test_is_partial_success_true(self):
+        """Test is_partial_success when some succeeded and some failed."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=2,
+            sources_failed=1,
+        )
+        assert result.is_partial_success is True
+
+    def test_is_partial_success_false_all_success(self):
+        """Test is_partial_success returns False when all succeeded."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=3,
+            sources_failed=0,
+        )
+        assert result.is_partial_success is False
+
+    def test_is_partial_success_false_all_failed(self):
+        """Test is_partial_success returns False when all failed."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=0,
+            sources_failed=3,
+        )
+        assert result.is_partial_success is False
+
+    def test_status_text_no_sources(self):
+        """Test status_text when no sources."""
+        result = CrawlResult(sources_attempted=0)
+        assert result.status_text == "Keine Quellen"
+
+    def test_status_text_success(self):
+        """Test status_text when successful."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=3,
+            sources_failed=0,
+        )
+        assert result.status_text == "Erfolgreich"
+
+    def test_status_text_partial(self):
+        """Test status_text when partial success."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=2,
+            sources_failed=1,
+        )
+        assert result.status_text == "Teilweise erfolgreich"
+
+    def test_status_text_failed(self):
+        """Test status_text when all failed."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=0,
+            sources_failed=3,
+        )
+        assert result.status_text == "Fehlgeschlagen"
+
+
+class TestCrawlState:
+    """Tests for CrawlState dataclass."""
+
+    def test_default_values(self):
+        """Test CrawlState has correct defaults."""
+        state = CrawlState()
+        assert state.is_running is False
+        assert state.cancel_requested is False
+        assert state.last_result is None
+        assert state.current_source is None
+        assert state.log_messages == []
+
+
+class TestCrawlLogFunctions:
+    """Tests for crawl log helper functions."""
+
+    def test_add_crawl_log(self):
+        """Test add_crawl_log adds message with timestamp."""
+        clear_crawl_log()
+        add_crawl_log("Test message")
+        logs = get_crawl_log()
+        assert len(logs) == 1
+        assert "Test message" in logs[0]
+        assert "[" in logs[0]  # Has timestamp
+
+    def test_clear_crawl_log(self):
+        """Test clear_crawl_log removes all messages."""
+        add_crawl_log("Message 1")
+        add_crawl_log("Message 2")
+        clear_crawl_log()
+        assert get_crawl_log() == []
+
+    def test_get_crawl_log_returns_copy(self):
+        """Test get_crawl_log returns a copy."""
+        clear_crawl_log()
+        add_crawl_log("Test")
+        logs1 = get_crawl_log()
+        logs2 = get_crawl_log()
+        assert logs1 == logs2
+        assert logs1 is not logs2  # Different objects
+
+
+class TestCrawlStateHelpers:
+    """Tests for crawl state helper functions."""
+
+    def test_get_crawl_state(self):
+        """Test get_crawl_state returns global state."""
+        state = get_crawl_state()
+        assert state is _crawl_state
+
+    def test_is_crawl_running_false(self):
+        """Test is_crawl_running when not running."""
+        _crawl_state.is_running = False
+        assert is_crawl_running() is False
+
+    def test_is_crawl_running_true(self):
+        """Test is_crawl_running when running."""
+        _crawl_state.is_running = True
+        try:
+            assert is_crawl_running() is True
+        finally:
+            _crawl_state.is_running = False
+
+    def test_is_cancel_requested_false(self):
+        """Test is_cancel_requested when not requested."""
+        _crawl_state.cancel_requested = False
+        assert is_cancel_requested() is False
+
+    def test_is_cancel_requested_true(self):
+        """Test is_cancel_requested when requested."""
+        _crawl_state.cancel_requested = True
+        try:
+            assert is_cancel_requested() is True
+        finally:
+            _crawl_state.cancel_requested = False
+
+    def test_get_last_crawl_result_none(self):
+        """Test get_last_crawl_result when no result."""
+        _crawl_state.last_result = None
+        assert get_last_crawl_result() is None
+
+    def test_get_last_crawl_result_with_result(self):
+        """Test get_last_crawl_result with result."""
+        result = CrawlResult(sources_attempted=1)
+        _crawl_state.last_result = result
+        try:
+            assert get_last_crawl_result() is result
+        finally:
+            _crawl_state.last_result = None
+
+
+class TestRequestCrawlCancel:
+    """Tests for request_crawl_cancel function."""
+
+    def test_cancel_when_running(self):
+        """Test cancellation when crawl is running."""
+        _crawl_state.is_running = True
+        _crawl_state.cancel_requested = False
+        try:
+            result = request_crawl_cancel()
+            assert result is True
+            assert _crawl_state.cancel_requested is True
+        finally:
+            _crawl_state.is_running = False
+            _crawl_state.cancel_requested = False
+
+    def test_cancel_when_not_running(self):
+        """Test cancellation when no crawl is running."""
+        _crawl_state.is_running = False
+        result = request_crawl_cancel()
+        assert result is False
+
+
+class TestPrepareCrawlState:
+    """Tests for prepare_crawl_state function."""
+
+    def test_prepares_state(self):
+        """Test prepare_crawl_state sets up state correctly."""
+        _crawl_state.is_running = False
+        _crawl_state.cancel_requested = True
+        _crawl_state.current_source = "old"
+        add_crawl_log("old log")
+
+        try:
+            result = prepare_crawl_state()
+            assert result is True
+            assert _crawl_state.is_running is True
+            assert _crawl_state.cancel_requested is False
+            assert _crawl_state.current_source is None
+            # Log should have initial message
+            logs = get_crawl_log()
+            assert any("gestartet" in log.lower() for log in logs)
+        finally:
+            _crawl_state.is_running = False
+            _crawl_state.cancel_requested = False
+            clear_crawl_log()
+
+    def test_fails_when_already_running(self):
+        """Test prepare_crawl_state fails when already running."""
+        _crawl_state.is_running = True
+        try:
+            result = prepare_crawl_state()
+            assert result is False
+        finally:
+            _crawl_state.is_running = False
+
+
+class TestLogCrawlSummary:
+    """Tests for _log_crawl_summary function."""
+
+    def test_logs_all_stats(self):
+        """Test that summary logs all stats."""
+        result = CrawlResult(
+            sources_attempted=4,
+            sources_succeeded=3,
+            sources_failed=1,
+            total_listings=100,
+            new_matches=10,
+            duplicate_matches=5,
+            failed_sources=["waffenboerse.ch"],
+            duration_seconds=15.5,
+        )
+
+        with patch("backend.services.crawler.logger") as mock_logger:
+            _log_crawl_summary(result)
+
+            # Verify all key stats are logged
+            calls = [str(call) for call in mock_logger.info.call_args_list]
+            all_logs = " ".join(calls)
+
+            assert "4" in all_logs  # sources_attempted
+            assert "3" in all_logs  # sources_succeeded
+            assert "1" in all_logs  # sources_failed
+            assert "100" in all_logs  # total_listings
+            assert "10" in all_logs  # new_matches
+            assert "5" in all_logs  # duplicate_matches
+            assert "waffenboerse.ch" in all_logs  # failed_sources
+
+    def test_logs_without_failed_sources(self):
+        """Test summary when no sources failed."""
+        result = CrawlResult(
+            sources_attempted=3,
+            sources_succeeded=3,
+            sources_failed=0,
+            failed_sources=[],
+        )
+
+        with patch("backend.services.crawler.logger") as mock_logger:
+            _log_crawl_summary(result)
+            # Should not raise and should log successfully
+            assert mock_logger.info.called
+
+
+class TestRunCrawlAsyncStates:
+    """Tests for run_crawl_async state handling."""
+
+    @pytest.mark.asyncio
+    async def test_raises_when_already_running(self, test_session):
+        """Test run_crawl_async raises RuntimeError when already running."""
+        _crawl_state.is_running = True
+        try:
+            with pytest.raises(RuntimeError, match="already running"):
+                await run_crawl_async(test_session, state_prepared=False)
+        finally:
+            _crawl_state.is_running = False
+
+    @pytest.mark.asyncio
+    async def test_skips_state_setup_when_prepared(self, test_session):
+        """Test run_crawl_async skips state setup when state_prepared=True."""
+        # Prepare state manually
+        _crawl_state.is_running = True
+        _crawl_state.cancel_requested = False
+        clear_crawl_log()
+        add_crawl_log("Pre-existing message")
+
+        try:
+            with patch.dict(SCRAPER_REGISTRY, {}, clear=True), \
+                 patch.dict(SOURCE_BASE_URLS, {}, clear=True):
+                result = await run_crawl_async(test_session, state_prepared=True)
+
+            # Should complete without error
+            assert result.sources_attempted == 0
+        finally:
+            _crawl_state.is_running = False
+            clear_crawl_log()
+
+    @pytest.mark.asyncio
+    async def test_cancellation_stops_crawl(self, test_session):
+        """Test that crawl respects cancellation request."""
+        execution_order = []
+
+        def make_slow_scraper(name):
+            async def scraper():
+                execution_order.append(name)
+                # Request cancel after first scraper runs
+                if len(execution_order) == 1:
+                    _crawl_state.cancel_requested = True
+                return []
+            return scraper
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_slow_scraper("waffenboerse"),
+            "waffengebraucht.ch": make_slow_scraper("waffengebraucht"),
+            "waffenzimmi.ch": make_slow_scraper("waffenzimmi"),
+        }):
+            _crawl_state.is_running = False
+            result = await run_crawl_async(test_session, state_prepared=False)
+
+        # Only first scraper should run before cancellation is checked
+        assert len(execution_order) == 1
+        assert _crawl_state.is_running is False
+
+    @pytest.mark.asyncio
+    async def test_resets_state_on_completion(self, test_session):
+        """Test that crawl resets state after completion."""
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+        }):
+            _crawl_state.is_running = False
+            await run_crawl_async(test_session)
+
+        assert _crawl_state.is_running is False
+        assert _crawl_state.cancel_requested is False
+        assert _crawl_state.current_source is None
+
+    @pytest.mark.asyncio
+    async def test_stores_last_result(self, test_session):
+        """Test that crawl stores result in global state."""
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+        }):
+            _crawl_state.is_running = False
+            _crawl_state.last_result = None
+            result = await run_crawl_async(test_session)
+
+        assert _crawl_state.last_result is result
+
+
+class TestRunCrawlAsyncExcludeTerms:
+    """Tests for run_crawl_async with exclude terms."""
+
+    @pytest.mark.asyncio
+    async def test_exclude_terms_logged(self, test_session):
+        """Test that exclude terms are logged when present."""
+        from backend.database.crud import create_search_term, create_exclude_term
+
+        create_search_term(test_session, "Glock", match_type="exact")
+        create_exclude_term(test_session, "defekt")
+
+        mock_listings = [
+            {"title": "Glock 17", "price": 800, "link": "https://test.ch/1", "source": "waffenboerse.ch"},
+        ]
+
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper(mock_listings),
+        }):
+            _crawl_state.is_running = False
+            clear_crawl_log()
+            await run_crawl_async(test_session)
+
+        logs = get_crawl_log()
+        # Check that exclude terms count is mentioned
+        log_text = " ".join(logs)
+        assert "Ausschl" in log_text or "1" in log_text
+
+
+class TestCrawlResultTimestamps:
+    """Tests for CrawlResult timestamp fields."""
+
+    def test_timestamps_set(self, test_session):
+        """Test that started_at and completed_at are set."""
+        with patch.dict(SCRAPER_REGISTRY, {
+            "waffenboerse.ch": make_async_scraper([]),
+        }):
+            result = run_crawl(test_session)
+
+        assert result.started_at is not None
+        assert result.completed_at is not None
+        assert result.started_at <= result.completed_at

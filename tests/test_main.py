@@ -6,13 +6,15 @@ Tests verify:
 - verify_database() handles missing alembic_version table
 - verify_database() handles missing application tables
 - verify_database() succeeds with complete database
+- FastAPI routes return correct responses
 """
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
 from alembic import command
@@ -139,3 +141,238 @@ class TestVerifyDatabase:
              patch.object(backend.main, 'engine', mock_engine):
             with pytest.raises(Exception, match="Connection failed"):
                 backend.main.verify_database()
+
+
+class TestHealthEndpoint:
+    """Tests for health check endpoint."""
+
+    def test_health_returns_ok(self):
+        """Test /health endpoint returns healthy status."""
+        from backend.main import app
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"):
+
+            mock_db = MagicMock()
+            mock_session.return_value = mock_db
+            client = TestClient(app)
+            response = client.get("/health")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "healthy"}
+
+
+class TestDashboardRoute:
+    """Tests for dashboard route."""
+
+    def test_dashboard_returns_html(self):
+        """Test dashboard returns HTML response."""
+        from backend.main import app
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.get_all_search_terms") as mock_terms, \
+             patch("backend.main.get_matches_by_search_term") as mock_matches, \
+             patch("backend.main.mark_matches_as_seen"):
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_terms.return_value = []
+            mock_matches.return_value = []
+
+            client = TestClient(app)
+            response = client.get("/")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestAdminSearchTermsRoute:
+    """Tests for admin search terms route."""
+
+    def test_admin_search_terms_returns_html(self):
+        """Test admin search terms page returns HTML."""
+        from backend.main import app
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.get_all_search_terms") as mock_terms:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_terms.return_value = []
+
+            client = TestClient(app)
+            response = client.get("/admin/search-terms")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestAdminSourcesRoute:
+    """Tests for admin sources route."""
+
+    def test_admin_sources_returns_html(self):
+        """Test admin sources page returns HTML."""
+        from backend.main import app
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.get_all_sources_sorted") as mock_sources:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_sources.return_value = []
+
+            client = TestClient(app)
+            response = client.get("/admin/sources")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestAdminCrawlRoute:
+    """Tests for admin crawl status route."""
+
+    def test_admin_crawl_status_returns_html(self):
+        """Test admin crawl status page returns HTML."""
+        from backend.main import app
+        from backend.services.crawler import CrawlState
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.get_crawl_state") as mock_state, \
+             patch("backend.main.get_crawl_log") as mock_log:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_state.return_value = CrawlState()
+            mock_log.return_value = []
+
+            client = TestClient(app)
+            response = client.get("/admin/crawl")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestAdminExcludeTermsRoute:
+    """Tests for admin exclude terms route."""
+
+    def test_admin_exclude_terms_returns_html(self):
+        """Test admin exclude terms page returns HTML."""
+        from backend.main import app
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.get_all_exclude_terms_sorted") as mock_terms:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_terms.return_value = []
+
+            client = TestClient(app)
+            response = client.get("/admin/exclude-terms")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestCrawlStatusPolling:
+    """Tests for crawl status polling endpoint."""
+
+    def test_crawl_status_partial_returns_html(self):
+        """Test crawl status partial returns HTML."""
+        from backend.main import app
+        from backend.services.crawler import CrawlState
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.get_crawl_state") as mock_state, \
+             patch("backend.main.get_crawl_log") as mock_log:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_state.return_value = CrawlState()
+            mock_log.return_value = []
+
+            client = TestClient(app)
+            response = client.get("/admin/crawl/status")
+
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+
+
+class TestCancelCrawl:
+    """Tests for cancel crawl endpoint."""
+
+    def test_cancel_crawl_when_not_running(self):
+        """Test cancel crawl returns error when not running."""
+        from backend.main import app
+        from backend.services.crawler import CrawlState
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.is_crawl_running") as mock_running, \
+             patch("backend.main.get_crawl_state") as mock_state:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_running.return_value = False
+            mock_state.return_value = CrawlState()
+
+            client = TestClient(app)
+            response = client.post("/admin/crawl/cancel")
+
+        assert response.status_code == 200
+
+    def test_cancel_crawl_when_running(self):
+        """Test cancel crawl requests cancellation when running."""
+        from backend.main import app
+        from backend.services.crawler import CrawlState
+
+        with patch("backend.main.verify_database"), \
+             patch("backend.database.SessionLocal") as mock_session_class, \
+             patch("backend.main.ensure_sources_exist"), \
+             patch("backend.database.ensure_default_search_terms"), \
+             patch("backend.database.ensure_default_exclude_terms"), \
+             patch("backend.main.is_crawl_running") as mock_running, \
+             patch("backend.main.request_crawl_cancel") as mock_cancel, \
+             patch("backend.main.get_crawl_state") as mock_state:
+
+            mock_db = MagicMock()
+            mock_session_class.return_value = mock_db
+            mock_running.return_value = True
+            state = CrawlState(is_running=True)
+            mock_state.return_value = state
+
+            client = TestClient(app)
+            response = client.post("/admin/crawl/cancel")
+
+            mock_cancel.assert_called_once()
+
+        assert response.status_code == 200
