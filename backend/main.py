@@ -278,8 +278,8 @@ async def dashboard(
         total_new_count += new_count
 
     # Build response first (so matches still show as "new" in this render)
-    response = templates.TemplateResponse("dashboard.html", {"request": request, 
-            "title": "Dashboard",
+    response = templates.TemplateResponse("dashboard.html", {"request": request,
+            "title": "Home",
             "groups": groups,
             "total_count": total_count,
             "new_count": total_new_count,
@@ -312,8 +312,8 @@ async def admin_search_terms(request: Request, db: Session = Depends(get_db)):
     - Reorder search terms (move up/down)
     """
     search_terms = get_all_search_terms(db)
-    return templates.TemplateResponse("admin/search_terms.html", {"request": request, 
-            "title": "Suchbegriffe",
+    return templates.TemplateResponse("admin/search_terms.html", {"request": request,
+            "title": "Begriffe",
             "search_terms": search_terms,
         }
     )
