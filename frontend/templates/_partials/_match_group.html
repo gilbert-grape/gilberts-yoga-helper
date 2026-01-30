@@ -39,7 +39,7 @@
     {# Group Content - matches grid or empty state #}
     <div id="group-content-{{ group.term.id }}" class="p-4">
         {% if group.matches and group.matches|length > 0 %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div class="match-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {% for match in group.matches %}
                     {% include "_partials/_match_card.html" %}
                 {% endfor %}

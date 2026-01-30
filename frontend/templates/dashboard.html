@@ -19,7 +19,17 @@
                 {% endif %}
             </p>
         </div>
-        <div class="flex items-center mt-2 sm:mt-0">
+        <div class="flex items-center gap-4 mt-2 sm:mt-0">
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="compact-checkbox" class="sr-only peer">
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ms-3 text-sm font-medium text-gray-700">Kompakt</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="expanded-checkbox" class="sr-only peer">
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ms-3 text-sm font-medium text-gray-700">Aufgeklappt</span>
+            </label>
             <label class="inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="filter-checkbox" class="sr-only peer" {% if filter_enabled %}checked{% endif %}>
                 <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -61,17 +71,138 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<style>
+    /* Compact mode styles */
+    body.compact-mode .match-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    @media (min-width: 640px) {
+        body.compact-mode .match-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        }
+    }
+    @media (min-width: 1024px) {
+        body.compact-mode .match-grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        }
+    }
+    @media (min-width: 1280px) {
+        body.compact-mode .match-grid {
+            grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+        }
+    }
+
+    /* Compact card image - much smaller */
+    body.compact-mode .match-card .match-image {
+        aspect-ratio: 4/3;
+        max-height: 80px;
+    }
+
+    /* Compact card content - smaller text and padding */
+    body.compact-mode .match-card .match-content {
+        padding: 0.5rem;
+    }
+    body.compact-mode .match-card .match-title {
+        font-size: 0.75rem;
+        line-height: 1rem;
+        -webkit-line-clamp: 2;
+    }
+    body.compact-mode .match-card .match-price {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+    body.compact-mode .match-card .match-meta {
+        font-size: 0.625rem;
+    }
+    body.compact-mode .match-card .match-meta .match-source-badge {
+        display: none;
+    }
+
+    /* Hide NEW badge in compact mode on mobile */
+    @media (max-width: 639px) {
+        body.compact-mode .match-card .new-badge {
+            display: none;
+        }
+    }
+</style>
 <script>
-    // Initialize accordion collapse/expand functionality
+    // Cookie helper functions
+    function setCookie(name, value, days) {
+        const expires = new Date(Date.now() + days * 864e5).toUTCString();
+        document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+    }
+
+    function getCookie(name) {
+        const value = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+        return value ? decodeURIComponent(value.split('=')[1]) : null;
+    }
+
+    // Compact mode - load from cookie and apply
+    const compactCheckbox = document.getElementById('compact-checkbox');
+    const isCompact = getCookie('compact_mode') !== 'false'; // Default to true
+
+    if (isCompact) {
+        document.body.classList.add('compact-mode');
+        compactCheckbox.checked = true;
+    }
+
+    compactCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('compact-mode');
+            setCookie('compact_mode', 'true', 365);
+        } else {
+            document.body.classList.remove('compact-mode');
+            setCookie('compact_mode', 'false', 365);
+        }
+    });
+
+    // Expanded mode - load from cookie and apply
+    const expandedCheckbox = document.getElementById('expanded-checkbox');
+    const isExpanded = getCookie('expanded_mode') !== 'false'; // Default to true
+
+    if (isExpanded) {
+        expandedCheckbox.checked = true;
+    }
+
+    // Function to expand/collapse all accordions
+    function setAllAccordions(expanded) {
+        document.querySelectorAll('[data-accordion-target]').forEach(button => {
+            const targetId = button.getAttribute('data-accordion-target');
+            const target = document.querySelector(targetId);
+            const icon = button.querySelector('[data-accordion-icon]');
+
+            if (expanded) {
+                target.classList.remove('hidden');
+                button.setAttribute('aria-expanded', 'true');
+                icon.classList.add('rotate-180');
+            } else {
+                target.classList.add('hidden');
+                button.setAttribute('aria-expanded', 'false');
+                icon.classList.remove('rotate-180');
+            }
+        });
+    }
+
+    // Apply expanded state on page load
+    if (isExpanded) {
+        setAllAccordions(true);
+    }
+
+    expandedCheckbox.addEventListener('change', function() {
+        setCookie('expanded_mode', this.checked ? 'true' : 'false', 365);
+        setAllAccordions(this.checked);
+    });
+
+    // Initialize accordion collapse/expand functionality (manual toggle)
     document.querySelectorAll('[data-accordion-target]').forEach(button => {
         button.addEventListener('click', () => {
             const targetId = button.getAttribute('data-accordion-target');
             const target = document.querySelector(targetId);
             const icon = button.querySelector('[data-accordion-icon]');
-            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            const currentlyExpanded = button.getAttribute('aria-expanded') === 'true';
 
             // Toggle visibility
-            if (isExpanded) {
+            if (currentlyExpanded) {
                 target.classList.add('hidden');
                 button.setAttribute('aria-expanded', 'false');
                 icon.classList.remove('rotate-180');

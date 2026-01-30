@@ -1,7 +1,7 @@
 {# Match Card Partial - displays a single match listing #}
-<div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow">
+<div class="match-card bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow">
     {# Image #}
-    <div class="aspect-video bg-gray-200 relative">
+    <div class="match-image aspect-video bg-gray-200 relative">
         {% if match.image_url %}
         <img
             src="{{ match.image_url }}"
@@ -18,25 +18,25 @@
         </div>
         {% endif %}
 
-        {# New Badge - will be styled in Story 3.3 #}
+        {# New Badge #}
         {% if match.is_new %}
-        <span class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
+        <span class="new-badge absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
             NEU
         </span>
         {% endif %}
     </div>
 
     {# Content #}
-    <div class="p-4">
+    <div class="match-content p-4">
         {# Title - clickable link to source #}
-        <h3 class="font-semibold text-gray-900 mb-1 line-clamp-2">
+        <h3 class="match-title font-semibold text-gray-900 mb-1 line-clamp-2">
             <a href="{{ match.url }}" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600">
                 {{ match.title }}
             </a>
         </h3>
 
         {# Price #}
-        <p class="text-lg font-bold text-gray-900 mb-2">
+        <p class="match-price text-lg font-bold text-gray-900 mb-2">
             {% if match.price %}
                 CHF {{ match.price }}
             {% else %}
@@ -45,9 +45,9 @@
         </p>
 
         {# Source and Search Term #}
-        <div class="flex items-center justify-between text-sm text-gray-500">
+        <div class="match-meta flex items-center justify-between text-sm text-gray-500">
             <span>{{ match.source.name }}</span>
-            <span class="bg-gray-100 px-2 py-0.5 rounded text-xs">{{ match.search_term.term }}</span>
+            <span class="match-source-badge bg-gray-100 px-2 py-0.5 rounded text-xs">{{ match.search_term.term }}</span>
         </div>
     </div>
 </div>
