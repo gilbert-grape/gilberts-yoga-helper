@@ -82,8 +82,8 @@ Das Projekt unterstützt **Python 3.7+**, sodass auch ältere Raspberry Pi OS Ve
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y python3 python3-pip python3-venv git sqlite3
 
-# Install Poetry
-curl -sSL https://install.python-poetry.org | python3 -
+# Install Poetry 1.x (Poetry 2.x requires Python 3.10+)
+curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
