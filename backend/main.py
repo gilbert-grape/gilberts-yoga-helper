@@ -204,7 +204,7 @@ templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 async def dashboard(
     request: Request,
     db: Session = Depends(get_db),
-    filter: bool = True,
+    filter: bool | None = None,
 ):
     """
     Dashboard home page showing all matches grouped by search term.
@@ -217,12 +217,18 @@ async def dashboard(
     - Exclude term filtering (matches containing exclude terms are hidden)
 
     Args:
-        filter: If True (default), hide matches containing exclude terms.
+        filter: If True, hide matches containing exclude terms.
                 If False, show all matches including those with exclude terms.
+                If None, read from cookie (default: True).
 
     After displaying, marks all matches as seen so they won't
     appear as "new" on the next visit.
     """
+    # Determine filter state: URL param > cookie > default (True)
+    if filter is None:
+        filter_cookie = request.cookies.get("filter_mode", "true")
+        filter = filter_cookie.lower() != "false"
+
     # Get all search terms (including those with no matches), sorted by sort_order
     search_terms = get_all_search_terms(db)
 

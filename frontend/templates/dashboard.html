@@ -75,54 +75,83 @@
     /* Compact mode styles */
     body.compact-mode .match-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.5rem !important;
     }
     @media (min-width: 640px) {
         body.compact-mode .match-grid {
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         }
     }
     @media (min-width: 1024px) {
         body.compact-mode .match-grid {
-            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         }
     }
     @media (min-width: 1280px) {
         body.compact-mode .match-grid {
-            grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
         }
     }
 
-    /* Compact card image - much smaller */
-    body.compact-mode .match-card .match-image {
-        aspect-ratio: 4/3;
-        max-height: 80px;
+    /* Compact card - show title wrapper at top */
+    body.compact-mode .match-card .match-title-wrapper {
+        display: block !important;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
     }
 
-    /* Compact card content - smaller text and padding */
+    /* Compact card body - horizontal layout */
+    body.compact-mode .match-card .match-body {
+        display: flex;
+        flex-direction: row;
+    }
+
+    /* Compact card image - small square on left */
+    body.compact-mode .match-card .match-image {
+        aspect-ratio: 1/1 !important;
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+        height: 60px !important;
+    }
+
+    /* Compact card content - beside image */
     body.compact-mode .match-card .match-content {
-        padding: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex: 1;
+        min-width: 0;
     }
+
+    /* Hide normal title in compact mode (shown in wrapper instead) */
     body.compact-mode .match-card .match-title {
-        font-size: 0.75rem;
-        line-height: 1rem;
-        -webkit-line-clamp: 2;
+        display: none;
     }
+
+    /* Compact price */
     body.compact-mode .match-card .match-price {
-        font-size: 0.875rem;
-        margin-bottom: 0.25rem;
+        font-size: 0.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
     }
+
+    /* Compact meta */
     body.compact-mode .match-card .match-meta {
         font-size: 0.625rem;
+        margin-top: 0.125rem;
     }
     body.compact-mode .match-card .match-meta .match-source-badge {
         display: none;
     }
 
-    /* Hide NEW badge in compact mode on mobile */
-    @media (max-width: 639px) {
-        body.compact-mode .match-card .new-badge {
-            display: none;
-        }
+    /* Smaller NEW badge in compact mode */
+    body.compact-mode .match-card .new-badge {
+        padding: 0 0.25rem;
+        font-size: 8px;
+        top: 2px;
+        right: 2px;
     }
 </style>
 <script>
@@ -214,9 +243,10 @@
         });
     });
 
-    // Filter checkbox - navigate to toggle exclude term filtering
+    // Filter checkbox - save to cookie and reload
     document.getElementById('filter-checkbox').addEventListener('change', function() {
-        window.location.href = '/?filter=' + (this.checked ? 'true' : 'false');
+        setCookie('filter_mode', this.checked ? 'true' : 'false', 365);
+        window.location.href = '/';
     });
 </script>
 {% endblock %}
