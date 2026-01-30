@@ -58,11 +58,11 @@ async def scrape_aebiwaffen() -> ScraperResults:
                 if product_list:
                     listings = product_list.select("li")
                 else:
-                    # Fallback: find li elements that contain product links
-                    listings = soup.select("li:has(a[href*='/de/'][href*='waffen'])")
+                    # Products have h3 (title) and img (image) - this is the most reliable selector
+                    listings = soup.select("li:has(h3):has(img)")
                     if not listings:
-                        # Try finding by structure: li with h3 and img
-                        listings = soup.select("li:has(h3):has(img)")
+                        # Fallback: find li elements with product links (numeric ID pattern)
+                        listings = soup.select("li:has(a[href*='/de/'][href*='waffen'])")
 
                 if not listings:
                     if page == 1:
