@@ -381,7 +381,7 @@ def create_search_term(
 # Default search terms to create on first startup only
 DEFAULT_SEARCH_TERMS = [
     "PPSH", "Tokarev", "Russ", "USSR", "UDSSR",
-    "CZ", "VZ", "CZ 75", "Makarov"
+    "CZ", "VZ", "CZ 75", "Makarov", "Sowjet", "Sovjet"
 ]
 
 
