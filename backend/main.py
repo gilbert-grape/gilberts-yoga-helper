@@ -245,7 +245,7 @@ async def dashboard(
     groups = []
     total_count = 0
     total_new_count = 0
-    seen_urls: set[str] = set()  # Track URLs already shown by earlier search terms
+    seen_urls = set()  # Track URLs already shown by earlier search terms
 
     for term in search_terms:
         all_matches = get_matches_by_search_term(db, term.id)

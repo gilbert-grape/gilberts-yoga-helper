@@ -13,7 +13,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -45,7 +45,7 @@ AsyncScraperFunc = Callable[[], Awaitable[ScraperResults]]
 
 # Registry mapping source names to their scraper functions
 # Source names must match database source.name values
-SCRAPER_REGISTRY: dict[str, AsyncScraperFunc] = {
+SCRAPER_REGISTRY: Dict[str, AsyncScraperFunc] = {
     "aebiwaffen.ch": scrape_aebiwaffen,
     "gwmh-shop.ch": scrape_gwmh,
     "waffenboerse.ch": scrape_waffenboerse,
@@ -54,7 +54,7 @@ SCRAPER_REGISTRY: dict[str, AsyncScraperFunc] = {
 }
 
 # Base URLs for each source (used when creating sources)
-SOURCE_BASE_URLS: dict[str, str] = {
+SOURCE_BASE_URLS: Dict[str, str] = {
     "aebiwaffen.ch": "https://www.aebiwaffen.ch",
     "gwmh-shop.ch": "https://www.gwmh-shop.ch",
     "waffenboerse.ch": "https://www.waffenboerse.ch",
@@ -73,7 +73,7 @@ class CrawlResult:
     total_listings: int = 0
     new_matches: int = 0
     duplicate_matches: int = 0
-    failed_sources: list[str] = field(default_factory=list)
+    failed_sources: List[str] = field(default_factory=list)
     duration_seconds: float = 0.0
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -120,7 +120,7 @@ class CrawlState:
     cancel_requested: bool = False
     last_result: Optional[CrawlResult] = None
     current_source: Optional[str] = None
-    log_messages: list[str] = field(default_factory=list)
+    log_messages: List[str] = field(default_factory=list)
 
 
 # Global crawl state (single instance for single-user app)
@@ -139,12 +139,12 @@ def clear_crawl_log() -> None:
     _crawl_state.log_messages.clear()
 
 
-def get_crawl_log() -> list[str]:
+def get_crawl_log() -> List[str]:
     """Get all log messages."""
     return _crawl_state.log_messages.copy()
 
 
-def get_registered_sources() -> list[str]:
+def get_registered_sources() -> List[str]:
     """Get list of all registered source names."""
     return list(SCRAPER_REGISTRY.keys())
 
@@ -209,7 +209,7 @@ def get_last_crawl_result() -> Optional[CrawlResult]:
     return _crawl_state.last_result
 
 
-def ensure_sources_exist(session: Session) -> dict[str, int]:
+def ensure_sources_exist(session: Session) -> Dict[str, int]:
     """
     Ensure all registered sources exist in the database.
 
@@ -221,7 +221,7 @@ def ensure_sources_exist(session: Session) -> dict[str, int]:
     Returns:
         Mapping of source name to source ID
     """
-    source_map: dict[str, int] = {}
+    source_map: Dict[str, int] = {}
 
     for name, base_url in SOURCE_BASE_URLS.items():
         source = get_or_create_source(session, name, base_url)
@@ -233,7 +233,7 @@ def ensure_sources_exist(session: Session) -> dict[str, int]:
 async def run_single_scraper(
     source: Source,
     scraper_func: AsyncScraperFunc,
-) -> tuple[ScraperResults, Optional[str]]:
+) -> Tuple[ScraperResults, Optional[str]]:
     """
     Run a single scraper with error isolation.
 

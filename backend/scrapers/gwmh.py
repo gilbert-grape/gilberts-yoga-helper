@@ -8,7 +8,7 @@ This scraper uses a two-step approach:
 """
 import json
 import re
-from typing import Optional
+from typing import Dict, List, Optional
 
 from bs4 import BeautifulSoup
 
@@ -31,7 +31,7 @@ SOURCE_NAME = "gwmh-shop.ch"
 MAX_PRODUCTS_PER_TERM = 50  # Limit products per search term to avoid too many requests
 
 
-async def scrape_gwmh(search_terms: list[str] | None = None) -> ScraperResults:
+async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResults:
     """
     Scrape listings from gwmh-shop.ch using JSONP search API.
 
@@ -62,7 +62,7 @@ async def scrape_gwmh(search_terms: list[str] | None = None) -> ScraperResults:
         return []
 
     results: ScraperResults = []
-    seen_aliases: set[str] = set()  # Deduplicate products across searches
+    seen_aliases = set()  # Deduplicate products across searches
 
     try:
         async with create_http_client() as client:
@@ -146,7 +146,7 @@ async def scrape_gwmh(search_terms: list[str] | None = None) -> ScraperResults:
     return results
 
 
-def _parse_jsonp_response(response_text: str) -> list[dict]:
+def _parse_jsonp_response(response_text: str) -> List[Dict]:
     """
     Parse JSONP response to extract product data.
 

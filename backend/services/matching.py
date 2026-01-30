@@ -7,7 +7,7 @@ Supports two matching modes:
 - similar: Normalized match (ignores spaces, hyphens, case)
 """
 import re
-from typing import Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 
 class MatchResult(TypedDict):
@@ -138,7 +138,7 @@ def matches(title: str, term: str, match_type: str) -> bool:
         return matches_exact(title, term)
 
 
-def contains_exclude_term(title: str, exclude_terms: list[str]) -> bool:
+def contains_exclude_term(title: str, exclude_terms: List[str]) -> bool:
     """
     Check if title contains any of the exclude terms (case-insensitive).
 
@@ -166,10 +166,10 @@ def contains_exclude_term(title: str, exclude_terms: list[str]) -> bool:
 
 
 def find_matches(
-    listings: list[dict],
-    search_terms: list[dict],
-    exclude_terms: Optional[list[str]] = None,
-) -> list[MatchResult]:
+    listings: List[dict],
+    search_terms: List[dict],
+    exclude_terms: Optional[List[str]] = None,
+) -> List[MatchResult]:
     """
     Find all matches between listings and search terms.
 
@@ -197,7 +197,7 @@ def find_matches(
         >>> results[0]["search_term"]
         'Glock 17'
     """
-    results: list[MatchResult] = []
+    results: List[MatchResult] = []
 
     # Handle empty inputs
     if not listings or not search_terms:

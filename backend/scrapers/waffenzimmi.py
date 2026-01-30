@@ -4,7 +4,7 @@ waffenzimmi.ch Scraper
 Scrapes used firearms listings from waffenzimmi.ch (WooCommerce site)
 """
 import re
-from typing import Optional
+from typing import List, Optional
 
 from bs4 import BeautifulSoup, Tag
 
@@ -27,7 +27,7 @@ SOURCE_NAME = "waffenzimmi.ch"
 MAX_PAGES = 10  # Max pages per search term
 
 
-async def scrape_waffenzimmi(search_terms: list[str] | None = None) -> ScraperResults:
+async def scrape_waffenzimmi(search_terms: Optional[List[str]] = None) -> ScraperResults:
     """
     Scrape listings from waffenzimmi.ch using search.
 
@@ -58,7 +58,7 @@ async def scrape_waffenzimmi(search_terms: list[str] | None = None) -> ScraperRe
         return []
 
     results: ScraperResults = []
-    seen_links: set[str] = set()  # Deduplicate results across searches
+    seen_links = set()  # Deduplicate results across searches
 
     try:
         async with create_http_client() as client:
@@ -96,7 +96,7 @@ async def scrape_waffenzimmi(search_terms: list[str] | None = None) -> ScraperRe
                             listings = [_find_listing_container(elem) for elem in product_links]
                             listings = [l for l in listings if l is not None]
                             # Deduplicate by element id
-                            seen_ids: set[int] = set()
+                            seen_ids = set()
                             unique_listings = []
                             for listing in listings:
                                 listing_id = id(listing)

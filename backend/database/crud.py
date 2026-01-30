@@ -8,7 +8,7 @@ Provides functions for:
 - App settings and new match detection
 """
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -64,7 +64,7 @@ def get_or_create_source(session: Session, name: str, base_url: str) -> Source:
     return source
 
 
-def get_all_sources(session: Session) -> list[Source]:
+def get_all_sources(session: Session) -> List[Source]:
     """
     Get all sources.
 
@@ -77,7 +77,7 @@ def get_all_sources(session: Session) -> list[Source]:
     return session.query(Source).all()
 
 
-def get_active_sources(session: Session) -> list[Source]:
+def get_active_sources(session: Session) -> List[Source]:
     """
     Get all active sources sorted by sort_order.
 
@@ -90,7 +90,7 @@ def get_active_sources(session: Session) -> list[Source]:
     return session.query(Source).filter(Source.is_active == True).order_by(Source.sort_order).all()
 
 
-def get_all_sources_sorted(session: Session) -> list[Source]:
+def get_all_sources_sorted(session: Session) -> List[Source]:
     """
     Get all sources sorted by sort_order.
 
@@ -192,7 +192,7 @@ def clear_source_error(session: Session, source_id: int) -> Optional[Source]:
     return source
 
 
-def move_source_up(session: Session, source_id: int) -> list[Source]:
+def move_source_up(session: Session, source_id: int) -> List[Source]:
     """
     Move a source up in the sort order (swap with previous source).
 
@@ -221,7 +221,7 @@ def move_source_up(session: Session, source_id: int) -> list[Source]:
     return get_all_sources_sorted(session)
 
 
-def move_source_down(session: Session, source_id: int) -> list[Source]:
+def move_source_down(session: Session, source_id: int) -> List[Source]:
     """
     Move a source down in the sort order (swap with next source).
 
@@ -255,7 +255,7 @@ def move_source_down(session: Session, source_id: int) -> list[Source]:
 # =============================================================================
 
 
-def get_active_search_terms(session: Session) -> list[SearchTerm]:
+def get_active_search_terms(session: Session) -> List[SearchTerm]:
     """
     Get all active search terms for matching, ordered by sort_order.
 
@@ -270,7 +270,7 @@ def get_active_search_terms(session: Session) -> list[SearchTerm]:
     ).order_by(SearchTerm.sort_order).all()
 
 
-def get_all_search_terms(session: Session) -> list[SearchTerm]:
+def get_all_search_terms(session: Session) -> List[SearchTerm]:
     """
     Get all search terms (active and inactive), ordered by sort_order.
 
@@ -303,7 +303,7 @@ def search_term_to_dict(term: SearchTerm) -> dict:
     }
 
 
-def get_all_search_terms_sorted(session: Session) -> list[SearchTerm]:
+def get_all_search_terms_sorted(session: Session) -> List[SearchTerm]:
     """
     Get all search terms sorted alphabetically by term.
 
@@ -385,7 +385,7 @@ DEFAULT_SEARCH_TERMS = [
 ]
 
 
-def ensure_default_search_terms(session: Session) -> list[SearchTerm]:
+def ensure_default_search_terms(session: Session) -> List[SearchTerm]:
     """
     Create default search terms on first startup only.
 
@@ -566,7 +566,7 @@ def move_search_term_down(session: Session, term_id: int) -> Optional[SearchTerm
 # =============================================================================
 
 
-def get_all_exclude_terms(session: Session) -> list[ExcludeTerm]:
+def get_all_exclude_terms(session: Session) -> List[ExcludeTerm]:
     """
     Get all exclude terms (active and inactive).
 
@@ -579,7 +579,7 @@ def get_all_exclude_terms(session: Session) -> list[ExcludeTerm]:
     return session.query(ExcludeTerm).all()
 
 
-def get_all_exclude_terms_sorted(session: Session) -> list[ExcludeTerm]:
+def get_all_exclude_terms_sorted(session: Session) -> List[ExcludeTerm]:
     """
     Get all exclude terms sorted alphabetically by term.
 
@@ -592,7 +592,7 @@ def get_all_exclude_terms_sorted(session: Session) -> list[ExcludeTerm]:
     return session.query(ExcludeTerm).order_by(ExcludeTerm.term).all()
 
 
-def get_active_exclude_terms(session: Session) -> list[ExcludeTerm]:
+def get_active_exclude_terms(session: Session) -> List[ExcludeTerm]:
     """
     Get all active exclude terms.
 
@@ -663,7 +663,7 @@ def create_exclude_term(
 DEFAULT_EXCLUDE_TERMS = ["CO2", "Airsoft", "Softair"]
 
 
-def ensure_default_exclude_terms(session: Session) -> list[ExcludeTerm]:
+def ensure_default_exclude_terms(session: Session) -> List[ExcludeTerm]:
     """
     Create default exclude terms on first startup only.
 
@@ -824,9 +824,9 @@ def save_match(
 
 def save_matches(
     session: Session,
-    match_results: list[dict],
-    source_map: dict[str, int]
-) -> tuple[int, int]:
+    match_results: List[dict],
+    source_map: Dict[str, int]
+) -> Tuple[int, int]:
     """
     Bulk save matches to the database with deduplication.
 
@@ -867,7 +867,7 @@ def save_matches(
 def get_matches_by_search_term(
     session: Session,
     search_term_id: int
-) -> list[Match]:
+) -> List[Match]:
     """
     Get all matches for a specific search term.
 
@@ -883,7 +883,7 @@ def get_matches_by_search_term(
     ).order_by(Match.created_at.desc()).all()
 
 
-def get_all_matches(session: Session) -> list[Match]:
+def get_all_matches(session: Session) -> List[Match]:
     """
     Get all matches ordered by creation date (newest first).
 
@@ -896,7 +896,7 @@ def get_all_matches(session: Session) -> list[Match]:
     return session.query(Match).order_by(Match.created_at.desc()).all()
 
 
-def get_new_matches(session: Session) -> list[Match]:
+def get_new_matches(session: Session) -> List[Match]:
     """
     Get all matches marked as new.
 

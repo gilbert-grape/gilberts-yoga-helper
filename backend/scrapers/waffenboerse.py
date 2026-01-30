@@ -4,7 +4,7 @@ waffenboerse.ch Scraper
 Scrapes used firearms listings from waffenboerse.ch
 """
 import re
-from typing import Optional
+from typing import List, Optional
 
 from bs4 import BeautifulSoup, Tag
 
@@ -28,7 +28,7 @@ SOURCE_NAME = "waffenboerse.ch"
 MAX_PAGES = 5  # Max pages per search term
 
 
-async def scrape_waffenboerse(search_terms: list[str] | None = None) -> ScraperResults:
+async def scrape_waffenboerse(search_terms: Optional[List[str]] = None) -> ScraperResults:
     """
     Scrape listings from waffenboerse.ch using search.
 
@@ -59,7 +59,7 @@ async def scrape_waffenboerse(search_terms: list[str] | None = None) -> ScraperR
         return []
 
     results: ScraperResults = []
-    seen_links: set[str] = set()  # Deduplicate results across searches
+    seen_links = set()  # Deduplicate results across searches
 
     try:
         async with create_http_client() as client:

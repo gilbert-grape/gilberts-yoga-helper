@@ -121,8 +121,54 @@ def _has_next_page(soup: BeautifulSoup, current_page: int) -> bool:
     return next_link is not None
 
 
+def _is_available(listing: Tag) -> bool:
+    """
+    Check if item is available (not ordered/bestellt).
+
+    Items with a blue circle showing "0" are ordered but not available.
+    Returns True if available, False if ordered (availability = 0).
+    """
+    # Look for availability indicator - typically a badge/circle with a number
+    # Common patterns: span with number, badge element, availability class
+    availability_selectors = [
+        ".availability",
+        ".stock",
+        ".badge",
+        "span.circle",
+        "[class*='available']",
+        "[class*='stock']",
+    ]
+
+    for selector in availability_selectors:
+        elem = listing.select_one(selector)
+        if elem:
+            text = elem.get_text(strip=True)
+            # If it shows "0", item is not available
+            if text == "0":
+                return False
+
+    # Also check for any element that just contains "0" as availability indicator
+    # Look for small text elements that might be the blue circle
+    for elem in listing.select("span, div"):
+        text = elem.get_text(strip=True)
+        # Check if this is just a "0" (availability indicator)
+        if text == "0":
+            # Verify it's likely an availability indicator (small element, not price)
+            classes = elem.get("class", [])
+            class_str = " ".join(classes) if classes else ""
+            # Skip if it's clearly part of a price
+            if "price" not in class_str.lower():
+                return False
+
+    return True
+
+
 def _parse_listing(listing: Tag) -> Optional[ScraperResult]:
     """Parse a single listing element into ScraperResult."""
+    # Skip items with availability 0 (bestellt/ordered - not actually available)
+    if not _is_available(listing):
+        return None
+
     title = _extract_title(listing)
     if not title:
         return None
