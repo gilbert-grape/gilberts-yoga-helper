@@ -65,6 +65,7 @@ def create_http_client() -> httpx.AsyncClient:
     - 30 second timeout for all operations
     - Proper User-Agent header
     - Redirect following enabled
+    - SSL verification disabled (required for some sites)
 
     Returns:
         Configured httpx.AsyncClient instance.
@@ -75,7 +76,8 @@ def create_http_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(
         timeout=httpx.Timeout(REQUEST_TIMEOUT),
         headers={"User-Agent": get_user_agent()},
-        follow_redirects=True
+        follow_redirects=True,
+        verify=False
     )
 
 
