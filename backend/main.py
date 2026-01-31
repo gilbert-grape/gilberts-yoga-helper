@@ -51,6 +51,7 @@ from backend.database import (
     toggle_search_term_hide_seen,
     move_search_term_up,
     move_search_term_down,
+    get_all_sources,
     get_all_sources_sorted,
     get_source_by_id,
     toggle_source_active,
@@ -218,6 +219,7 @@ async def dashboard(
     - Empty state for search terms with no matches
     - Duplicate filtering based on hide_seen_matches setting
     - Exclude term filtering (matches containing exclude terms are hidden)
+    - Source filtering (only show matches from selected sources)
 
     Args:
         filter: If True, hide matches containing exclude terms.
@@ -231,6 +233,17 @@ async def dashboard(
     if filter is None:
         filter_cookie = request.cookies.get("filter_mode", "true")
         filter = filter_cookie.lower() != "false"
+
+    # Get all sources for the filter dropdown
+    all_sources = get_all_sources(db)
+
+    # Get selected sources from cookie (default: all sources selected)
+    selected_sources_cookie = request.cookies.get("selected_sources", "")
+    if selected_sources_cookie:
+        selected_source_ids = set(int(s) for s in selected_sources_cookie.split(",") if s.isdigit())
+    else:
+        # Default: all sources selected
+        selected_source_ids = {s.id for s in all_sources}
 
     # Get all search terms (including those with no matches), sorted by sort_order
     search_terms = get_all_search_terms(db)
@@ -253,11 +266,14 @@ async def dashboard(
     for term in search_terms:
         all_matches = get_matches_by_search_term(db, term.id)
 
+        # Filter by selected sources
+        source_filtered_matches = [m for m in all_matches if m.source_id in selected_source_ids]
+
         # Filter out matches containing exclude terms (only if filter is enabled)
         if filter:
-            filtered_matches = [m for m in all_matches if not matches_exclude_term(m.title)]
+            filtered_matches = [m for m in source_filtered_matches if not matches_exclude_term(m.title)]
         else:
-            filtered_matches = list(all_matches)
+            filtered_matches = list(source_filtered_matches)
 
         # Filter out duplicates if hide_seen_matches is enabled
         if term.hide_seen_matches:
@@ -286,6 +302,8 @@ async def dashboard(
             "total_count": total_count,
             "new_count": total_new_count,
             "filter_enabled": filter,
+            "all_sources": all_sources,
+            "selected_source_ids": selected_source_ids,
         },
     )
 

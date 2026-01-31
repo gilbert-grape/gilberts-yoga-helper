@@ -20,6 +20,47 @@
             </p>
         </div>
         <div class="flex items-center gap-4 mt-2 sm:mt-0">
+            {# Sources Filter Dropdown #}
+            <div class="relative">
+                <button id="sources-dropdown-btn" type="button" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Quellen
+                    <span id="sources-count" class="ml-1.5 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">{{ selected_source_ids|length }}/{{ all_sources|length }}</span>
+                    <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                {# Dropdown Popup #}
+                <div id="sources-dropdown" class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div class="p-3 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-gray-700">Quellen auswählen</span>
+                            <div class="flex gap-2">
+                                <button id="sources-select-all" class="text-xs text-blue-600 hover:text-blue-800">Alle</button>
+                                <span class="text-gray-300">|</span>
+                                <button id="sources-select-none" class="text-xs text-blue-600 hover:text-blue-800">Keine</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto p-2">
+                        {% for source in all_sources %}
+                        <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input type="checkbox" class="source-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                   data-source-id="{{ source.id }}"
+                                   {% if source.id in selected_source_ids %}checked{% endif %}>
+                            <span class="ml-2 text-sm text-gray-700">{{ source.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="p-3 border-t border-gray-200">
+                        <button id="sources-apply" class="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            Anwenden
+                        </button>
+                    </div>
+                </div>
+            </div>
             <label class="inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="compact-checkbox" class="sr-only peer">
                 <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -248,6 +289,64 @@
         const filterValue = this.checked ? 'true' : 'false';
         setCookie('filter_mode', filterValue, 365);
         window.location.href = '/?filter=' + filterValue;
+    });
+
+    // Sources dropdown functionality
+    const sourcesDropdownBtn = document.getElementById('sources-dropdown-btn');
+    const sourcesDropdown = document.getElementById('sources-dropdown');
+    const sourcesSelectAll = document.getElementById('sources-select-all');
+    const sourcesSelectNone = document.getElementById('sources-select-none');
+    const sourcesApply = document.getElementById('sources-apply');
+    const sourceCheckboxes = document.querySelectorAll('.source-checkbox');
+    const sourcesCount = document.getElementById('sources-count');
+    const totalSources = sourceCheckboxes.length;
+
+    // Toggle dropdown
+    sourcesDropdownBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sourcesDropdown.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!sourcesDropdown.contains(e.target) && !sourcesDropdownBtn.contains(e.target)) {
+            sourcesDropdown.classList.add('hidden');
+        }
+    });
+
+    // Update count display
+    function updateSourcesCount() {
+        const checked = document.querySelectorAll('.source-checkbox:checked').length;
+        sourcesCount.textContent = checked + '/' + totalSources;
+    }
+
+    // Select all
+    sourcesSelectAll.addEventListener('click', function() {
+        sourceCheckboxes.forEach(cb => cb.checked = true);
+        updateSourcesCount();
+    });
+
+    // Select none
+    sourcesSelectNone.addEventListener('click', function() {
+        sourceCheckboxes.forEach(cb => cb.checked = false);
+        updateSourcesCount();
+    });
+
+    // Update count when individual checkboxes change
+    sourceCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSourcesCount);
+    });
+
+    // Apply filter
+    sourcesApply.addEventListener('click', function() {
+        const selectedIds = [];
+        sourceCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                selectedIds.push(cb.dataset.sourceId);
+            }
+        });
+        setCookie('selected_sources', selectedIds.join(','), 365);
+        window.location.reload();
     });
 </script>
 {% endblock %}

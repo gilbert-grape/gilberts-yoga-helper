@@ -358,7 +358,11 @@
 </div>
 
 <script>
+// Store current tab in sessionStorage to preserve across HTMX updates
 function showTab(tabName) {
+    // Save current tab
+    sessionStorage.setItem('crawl-current-tab', tabName);
+
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     // Remove active state from all tab buttons
@@ -374,8 +378,13 @@ function showTab(tabName) {
     activeTab.classList.add('border-blue-500', 'text-blue-600');
 }
 
-// Auto-scroll live log to bottom after HTMX updates
+// Restore tab state after HTMX updates
 (function() {
+    // Restore saved tab or default to 'current'
+    var savedTab = sessionStorage.getItem('crawl-current-tab') || 'current';
+    showTab(savedTab);
+
+    // Auto-scroll live log to bottom
     var log = document.getElementById('live-log');
     if (log) {
         log.scrollTop = log.scrollHeight;
