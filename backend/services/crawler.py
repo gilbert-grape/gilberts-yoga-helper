@@ -87,11 +87,29 @@ def _get_lock_info() -> Optional[dict]:
 
 def _is_process_running(pid: int) -> bool:
     """Check if a process with given PID is still running."""
-    try:
-        os.kill(pid, 0)  # Signal 0 doesn't kill, just checks
-        return True
-    except OSError:
-        return False
+    import platform
+
+    if platform.system() == "Windows":
+        # On Windows, os.kill(pid, 0) doesn't work as expected
+        # Use ctypes to check if process exists
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+            if handle:
+                kernel32.CloseHandle(handle)
+                return True
+            return False
+        except Exception:
+            return False
+    else:
+        # Unix/Linux: signal 0 checks if process exists without killing
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
 
 
 def _is_lock_stale(lock_info: dict) -> bool:
