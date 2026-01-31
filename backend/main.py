@@ -71,6 +71,7 @@ from backend.database import (
     delete_exclude_term,
     toggle_exclude_term_active,
     get_crawl_logs,
+    get_avg_crawl_duration,
     DATABASE_PATH,
 )
 from backend.services.crawler import (
@@ -824,9 +825,14 @@ async def get_crawl_status_partial(request: Request, db: Session = Depends(get_d
     Get current crawl status partial for HTMX polling.
 
     Used for real-time status updates during crawl.
+    Includes progress tracking (sources done/total) and ETA estimation.
     """
     crawl_state = get_crawl_state()
     crawl_logs = get_crawl_logs(db, limit=50)
+
+    # Get average crawl duration for ETA calculation
+    avg_duration = get_avg_crawl_duration(db, limit=3) if crawl_state.is_running else None
+
     return templates.TemplateResponse("admin/_partials/_crawl_status.html", {
             "request": request,
             "is_running": crawl_state.is_running,
@@ -834,6 +840,11 @@ async def get_crawl_status_partial(request: Request, db: Session = Depends(get_d
             "last_result": crawl_state.last_result,
             "log_messages": get_crawl_log(),
             "crawl_logs": crawl_logs,
+            # Progress tracking
+            "sources_total": crawl_state.sources_total,
+            "sources_done": crawl_state.sources_done,
+            "started_at": crawl_state.started_at.isoformat() if crawl_state.started_at else None,
+            "avg_duration": avg_duration,
         }
     )
 
