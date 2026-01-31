@@ -28,6 +28,7 @@ from backend.database.crud import (
     save_matches,
     search_term_to_dict,
     update_crawl_log,
+    update_source_crawl_status,
 )
 from backend.database.models import Source
 from backend.scrapers import (
@@ -488,14 +489,14 @@ def ensure_sources_exist(session: Session) -> Dict[str, int]:
 
 
 async def run_single_scraper(
-    source: Source,
+    source_name: str,
     scraper_func: AsyncScraperFunc,
 ) -> Tuple[ScraperResults, Optional[str]]:
     """
     Run a single scraper with error isolation.
 
     Args:
-        source: Source database model
+        source_name: Name of the source for logging
         scraper_func: Async scraper function to call
 
     Returns:
@@ -506,7 +507,7 @@ async def run_single_scraper(
         return results, None
     except Exception as e:
         error_msg = f"{type(e).__name__}: {str(e)}"
-        logger.error(f"Scraper failed for {source.name}: {error_msg}")
+        logger.error(f"Scraper failed for {source_name}: {error_msg}")
         return [], error_msg
 
 
@@ -591,10 +592,14 @@ async def run_crawl_async(
         # Set total for progress tracking
         _crawl_state.sources_total = len(active_sources)
 
+        # Store source info upfront to avoid session expiry issues
+        # After commits, ORM objects become stale, so we need plain data
+        source_info = [(s.id, s.name) for s in active_sources]
+
         # Collect all listings from all scrapers
         all_listings: ScraperResults = []
 
-        for source in active_sources:
+        for source_id, source_name in source_info:
             # Check for cancellation before starting next source
             if _crawl_state.cancel_requested:
                 logger.info("Crawl cancelled by user")
@@ -618,40 +623,41 @@ async def run_crawl_async(
             result.sources_attempted += 1
 
             # Check if scraper exists for this source
-            scraper_func = SCRAPER_REGISTRY.get(source.name)
+            scraper_func = SCRAPER_REGISTRY.get(source_name)
             if not scraper_func:
-                logger.warning(f"No scraper registered for source: {source.name}")
+                logger.warning(f"No scraper registered for source: {source_name}")
                 result.sources_failed += 1
-                result.failed_sources.append(source.name)
-                source.last_error = "No scraper registered"
+                result.failed_sources.append(source_name)
+                # Update source status using direct SQL to avoid stale data issues
+                update_source_crawl_status(session, source_id, success=False, error_message="No scraper registered")
                 continue
 
-            logger.info(f"Running scraper for {source.name}")
-            _crawl_state.current_source = source.name
-            add_crawl_log(f"Starte {source.name}...")
+            logger.info(f"Running scraper for {source_name}")
+            _crawl_state.current_source = source_name
+            add_crawl_log(f"Starte {source_name}...")
 
             # Run scraper with error isolation (await async scraper)
-            listings, error = await run_single_scraper(source, scraper_func)
+            listings, error = await run_single_scraper(source_name, scraper_func)
 
             if error:
                 result.sources_failed += 1
-                result.failed_sources.append(source.name)
-                source.last_error = error
-                add_crawl_log(f"✗ {source.name}: Fehler - {error[:50]}")
+                result.failed_sources.append(source_name)
+                # Update source status using direct SQL to avoid stale data issues
+                update_source_crawl_status(session, source_id, success=False, error_message=error)
+                add_crawl_log(f"✗ {source_name}: Fehler - {error[:50]}")
             else:
                 result.sources_succeeded += 1
                 result.total_listings += len(listings)
                 all_listings.extend(listings)
-                source.last_crawl_at = datetime.now(timezone.utc)
-                source.last_error = None
-                logger.info(f"Scraped {len(listings)} listings from {source.name}")
-                add_crawl_log(f"✓ {source.name}: {len(listings)} Inserate gefunden")
+                # Update source status using direct SQL to avoid stale data issues
+                update_source_crawl_status(session, source_id, success=True)
+                logger.info(f"Scraped {len(listings)} listings from {source_name}")
+                add_crawl_log(f"✓ {source_name}: {len(listings)} Inserate gefunden")
 
             # Update progress
             _crawl_state.sources_done += 1
 
-        # Commit source updates
-        session.commit()
+        # Source updates are committed individually in update_source_crawl_status
 
         # Get active search terms for matching
         search_terms = get_active_search_terms(session)

@@ -26,6 +26,7 @@ from backend.database.crud import (
     get_all_sources,
     get_all_sources_sorted,
     get_active_sources,
+    update_source_crawl_status,
     toggle_source_active,
     update_source_last_crawl,
     clear_source_error,

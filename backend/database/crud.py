@@ -91,6 +91,47 @@ def get_active_sources(session: Session) -> List[Source]:
     return session.query(Source).filter(Source.is_active == True).order_by(Source.sort_order).all()
 
 
+def update_source_crawl_status(
+    session: Session,
+    source_id: int,
+    success: bool,
+    error_message: Optional[str] = None
+) -> None:
+    """
+    Update a source's crawl status using direct SQL to avoid stale data issues.
+
+    This function uses a direct UPDATE statement instead of ORM object modification
+    to prevent StaleDataError during long-running crawls.
+
+    Args:
+        session: Database session
+        source_id: ID of the source to update
+        success: Whether the crawl succeeded
+        error_message: Error message if crawl failed (truncated to 500 chars)
+    """
+    from sqlalchemy import update
+
+    now = datetime.now(timezone.utc)
+
+    if success:
+        stmt = (
+            update(Source)
+            .where(Source.id == source_id)
+            .values(last_crawl_at=now, last_error=None, updated_at=now)
+        )
+    else:
+        # Truncate error message to avoid DB issues
+        error_msg = error_message[:500] if error_message else "Unknown error"
+        stmt = (
+            update(Source)
+            .where(Source.id == source_id)
+            .values(last_error=error_msg, updated_at=now)
+        )
+
+    session.execute(stmt)
+    session.commit()
+
+
 def get_all_sources_sorted(session: Session) -> List[Source]:
     """
     Get all sources sorted by sort_order.
