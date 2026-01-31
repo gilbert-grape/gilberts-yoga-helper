@@ -274,11 +274,12 @@ async def dashboard(
 
     # Get selected sources from cookie (default: all sources selected)
     # Note: Cookie value is URL-encoded by JavaScript, so we need to decode it
-    selected_sources_cookie = unquote(request.cookies.get("selected_sources", ""))
-    if selected_sources_cookie:
+    # Distinguish between: cookie not set (default all) vs cookie empty (user selected none)
+    if "selected_sources" in request.cookies:
+        selected_sources_cookie = unquote(request.cookies.get("selected_sources", ""))
         selected_source_ids = set(int(s) for s in selected_sources_cookie.split(",") if s.isdigit())
     else:
-        # Default: all sources selected
+        # Cookie not set: default to all sources selected
         selected_source_ids = {s.id for s in all_sources}
 
     # Get all search terms (including those with no matches), sorted by sort_order
