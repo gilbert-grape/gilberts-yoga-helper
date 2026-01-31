@@ -999,3 +999,22 @@ def get_new_match_count(session: Session) -> int:
         Number of matches where is_new=True
     """
     return session.query(Match).filter(Match.is_new == True).count()
+
+
+def clear_all_matches(session: Session) -> int:
+    """
+    Delete all matches from the database.
+
+    This allows a fresh crawl to reload everything.
+
+    Args:
+        session: Database session
+
+    Returns:
+        Number of matches deleted
+    """
+    count = session.query(Match).count()
+    session.query(Match).delete()
+    session.commit()
+    logger.info(f"Cleared all matches from database ({count} deleted)")
+    return count

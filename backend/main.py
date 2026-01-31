@@ -60,6 +60,7 @@ from backend.database import (
     get_matches_by_search_term,
     get_new_match_count,
     mark_matches_as_seen,
+    clear_all_matches,
     get_all_exclude_terms_sorted,
     get_active_exclude_terms,
     get_exclude_term_by_id,
@@ -795,10 +796,42 @@ async def cancel_crawl(request: Request):
     request_crawl_cancel()
 
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
             "success": "Abbruch angefordert...",
+        }
+    )
+
+
+@app.post("/admin/crawl/clear-db")
+async def clear_matches_db(request: Request, db: Session = Depends(get_db)):
+    """
+    Clear all matches from the database via HTMX request.
+
+    This allows a fresh crawl to reload everything.
+    Returns the updated status partial for HTMX swap.
+    """
+    if is_crawl_running():
+        crawl_state = get_crawl_state()
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
+                "is_running": True,
+                "current_source": crawl_state.current_source,
+                "last_result": crawl_state.last_result,
+                "log_messages": get_crawl_log(),
+                "error": "Kann Datenbank nicht leeren während ein Crawl läuft.",
+            }
+        )
+
+    count = clear_all_matches(db)
+
+    crawl_state = get_crawl_state()
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
+            "is_running": False,
+            "current_source": None,
+            "last_result": crawl_state.last_result,
+            "log_messages": get_crawl_log(),
+            "success": f"Datenbank geleert ({count} Treffer gelöscht).",
         }
     )

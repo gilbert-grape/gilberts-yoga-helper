@@ -67,6 +67,7 @@ from backend.database.crud import (
     mark_matches_as_seen,
     get_last_seen_at,
     get_new_match_count,
+    clear_all_matches,
 )
 
 __all__ = [
@@ -133,4 +134,5 @@ __all__ = [
     "mark_matches_as_seen",
     "get_last_seen_at",
     "get_new_match_count",
+    "clear_all_matches",
 ]

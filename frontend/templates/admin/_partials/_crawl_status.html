@@ -100,6 +100,19 @@
                     <span class="crawl-text">Jetzt crawlen</span>
                     <span class="crawl-loading-text hidden">Wird gestartet...</span>
                 </button>
+                {# Clear Database Button #}
+                <button
+                    hx-post="/admin/crawl/clear-db"
+                    hx-target="#crawl-status"
+                    hx-swap="innerHTML"
+                    hx-confirm="Wirklich alle Treffer löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+                    class="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                >
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Datenbank leeren
+                </button>
                 <style>
                     .crawl-btn.htmx-request .crawl-icon { display: none; }
                     .crawl-btn.htmx-request .crawl-spinner { display: inline-block; }
