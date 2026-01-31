@@ -18,7 +18,6 @@ from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from backend.database.crud import (
-    get_active_exclude_terms,
     get_active_search_terms,
     get_active_sources,
     get_or_create_source,
@@ -370,21 +369,13 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
         # Convert search terms to dict format for matching
         term_dicts = [search_term_to_dict(term) for term in search_terms]
 
-        # Get active exclude terms
-        exclude_terms = get_active_exclude_terms(session)
-        exclude_list = [et.term for et in exclude_terms]
-
         logger.info(
             f"Matching {len(all_listings)} listings against {len(term_dicts)} search terms"
         )
-        if exclude_list:
-            logger.info(f"Excluding listings containing: {exclude_list}")
-            add_crawl_log(f"Vergleiche {len(all_listings)} Inserate mit {len(term_dicts)} Suchbegriffen ({len(exclude_list)} Ausschlüsse)...")
-        else:
-            add_crawl_log(f"Vergleiche {len(all_listings)} Inserate mit {len(term_dicts)} Suchbegriffen...")
+        add_crawl_log(f"Vergleiche {len(all_listings)} Inserate mit {len(term_dicts)} Suchbegriffen...")
 
-        # Find matches (with exclude term filtering)
-        match_results = find_matches(all_listings, term_dicts, exclude_list)
+        # Find matches (exclude terms are only applied visually in dashboard, not during crawl)
+        match_results = find_matches(all_listings, term_dicts)
         logger.info(f"Found {len(match_results)} potential matches")
         add_crawl_log(f"→ {len(match_results)} potentielle Treffer gefunden")
 
