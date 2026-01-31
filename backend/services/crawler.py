@@ -29,8 +29,11 @@ from backend.database.crud import (
 from backend.database.models import Source
 from backend.scrapers import (
     ScraperResults,
+    scrape_aats,
     scrape_aebiwaffen,
+    scrape_armashop,
     scrape_gwmh,
+    scrape_petitesannonces,
     scrape_waffenboerse,
     scrape_waffengebraucht,
     scrape_waffenzimmi,
@@ -47,8 +50,11 @@ AsyncScraperFunc = Callable[[], Awaitable[ScraperResults]]
 # Registry mapping source names to their scraper functions
 # Source names must match database source.name values
 SCRAPER_REGISTRY: Dict[str, AsyncScraperFunc] = {
+    "aats-group.ch": scrape_aats,
     "aebiwaffen.ch": scrape_aebiwaffen,
+    "armashop.ch": scrape_armashop,
     "gwmh-shop.ch": scrape_gwmh,
+    "petitesannonces.ch": scrape_petitesannonces,
     "waffenboerse.ch": scrape_waffenboerse,
     "waffengebraucht.ch": scrape_waffengebraucht,
     "waffenzimmi.ch": scrape_waffenzimmi,
@@ -56,8 +62,11 @@ SCRAPER_REGISTRY: Dict[str, AsyncScraperFunc] = {
 
 # Base URLs for each source (used when creating sources)
 SOURCE_BASE_URLS: Dict[str, str] = {
+    "aats-group.ch": "https://aats-group.ch",
     "aebiwaffen.ch": "https://www.aebiwaffen.ch",
+    "armashop.ch": "https://armashop.ch",
     "gwmh-shop.ch": "https://www.gwmh-shop.ch",
+    "petitesannonces.ch": "https://www.petitesannonces.ch",
     "waffenboerse.ch": "https://www.waffenboerse.ch",
     "waffengebraucht.ch": "https://waffengebraucht.ch",
     "waffenzimmi.ch": "https://www.waffenzimmi.ch",
