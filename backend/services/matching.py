@@ -230,6 +230,9 @@ def find_matches(
         if contains_exclude_term(title, exclude_list):
             continue
 
+        # Check if listing was found by a specific search term
+        found_by_term = listing.get("found_by_term")
+
         for term_data in active_terms:
             term_id = term_data.get("id")
             term_text = term_data.get("term", "")
@@ -238,12 +241,19 @@ def find_matches(
             if not term_id or not term_text:
                 continue
 
-            if matches(title, term_text, match_type):
+            # Match if: 1) title matches term, or 2) listing was found by searching for this term
+            title_matches = matches(title, term_text, match_type)
+            found_by_matches = (
+                found_by_term is not None and
+                found_by_term.lower() == term_text.lower()
+            )
+
+            if title_matches or found_by_matches:
                 results.append(MatchResult(
                     listing=listing,
                     search_term_id=term_id,
                     search_term=term_text,
-                    match_type=match_type
+                    match_type="found_by_search" if found_by_matches and not title_matches else match_type
                 ))
 
     return results

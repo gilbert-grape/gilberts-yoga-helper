@@ -60,12 +60,23 @@ async def scrape_egun(search_terms: Optional[List[str]] = None) -> ScraperResult
     seen_links = set()  # Deduplicate results across searches
 
     try:
+        from backend.services.crawler import is_cancel_requested
+
         async with create_http_client() as client:
             for term in search_terms:
+                # Check for cancellation between search terms
+                if is_cancel_requested():
+                    logger.info(f"{SOURCE_NAME} - Cancelled by user")
+                    return results
+
                 add_crawl_log(f"  → Suche: '{term}'")
 
                 page = 1
                 while page <= MAX_PAGES:
+                    # Check for cancellation between pages
+                    if is_cancel_requested():
+                        logger.info(f"{SOURCE_NAME} - Cancelled by user")
+                        return results
                     # Construct search URL - type=1 for auctions, type=2 for buy-now
                     encoded_term = quote_plus(term)
                     url = f"{SEARCH_URL}?keyword={encoded_term}&type=1"

@@ -66,8 +66,14 @@ async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResult
     seen_aliases = set()  # Deduplicate products across searches
 
     try:
+        from backend.services.crawler import is_cancel_requested
+
         async with create_http_client() as client:
             for term in search_terms:
+                # Check for cancellation between search terms
+                if is_cancel_requested():
+                    logger.info(f"{SOURCE_NAME} - Cancelled by user")
+                    return results
                 add_crawl_log(f"  → Suche: '{term}'")
 
                 # Step 1: Call JSONP search API

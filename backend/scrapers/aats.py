@@ -64,6 +64,8 @@ async def scrape_aats(search_terms: Optional[List[str]] = None) -> ScraperResult
     seen_urls = set()
 
     try:
+        from backend.services.crawler import is_cancel_requested
+
         async with create_http_client() as client:
             add_crawl_log(f"  Lade Sitemap...")
 
@@ -82,6 +84,11 @@ async def scrape_aats(search_terms: Optional[List[str]] = None) -> ScraperResult
 
             # Match products against search terms
             for url in product_urls:
+                # Check for cancellation between products
+                if is_cancel_requested():
+                    logger.info(f"{SOURCE_NAME} - Cancelled by user")
+                    return results
+
                 # Extract slug from URL
                 # URL format: https://aats-group.ch/shop/item/product-name-here
                 slug = url.split('/shop/item/')[-1] if '/shop/item/' in url else ''

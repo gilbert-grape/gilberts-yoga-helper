@@ -28,7 +28,7 @@ REQUEST_DELAY_MIN = 2  # seconds between requests
 REQUEST_DELAY_MAX = 5  # seconds between requests
 
 
-class ScraperResult(TypedDict):
+class ScraperResult(TypedDict, total=False):
     """Standard result type for all scrapers.
 
     Attributes:
@@ -37,12 +37,16 @@ class ScraperResult(TypedDict):
         image_url: Absolute URL to image, None if no image available
         link: Absolute URL to original listing (required)
         source: Source website name, e.g., "waffenboerse.ch" (required)
+        found_by_term: Search term that found this listing (optional).
+                      When set, the listing will be considered a match for this term
+                      even if the term doesn't appear in the title.
     """
     title: str
     price: Optional[float]
     image_url: Optional[str]
     link: str
     source: str
+    found_by_term: Optional[str]
 
 
 # Type alias for list of scraper results

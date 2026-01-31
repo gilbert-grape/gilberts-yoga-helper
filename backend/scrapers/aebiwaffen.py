@@ -40,9 +40,15 @@ async def scrape_aebiwaffen() -> ScraperResults:
     results: ScraperResults = []
 
     try:
+        from backend.services.crawler import is_cancel_requested
+
         async with create_http_client() as client:
             page = 1
             while page <= MAX_PAGES:
+                # Check for cancellation between pages
+                if is_cancel_requested():
+                    logger.info(f"{SOURCE_NAME} - Cancelled by user")
+                    return results
                 # Pagination uses ?seite=N parameter
                 url = LISTINGS_URL if page == 1 else f"{LISTINGS_URL}?seite={page}"
                 add_crawl_log(f"    Seite {page}...")
