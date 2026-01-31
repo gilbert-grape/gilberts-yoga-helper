@@ -309,6 +309,98 @@ class TestCrawlStatusPolling:
         assert "test.ch" in response.text
 
 
+class TestCrawlProgressDisplay:
+    """Tests for crawl progress indicator display."""
+
+    def test_progress_bar_shown_when_running(self, client, reset_crawl_state):
+        """Test that progress bar is shown when crawl is running with progress data."""
+        from backend.services import crawler
+        from datetime import datetime, timezone
+
+        crawler._crawl_state.is_running = True
+        crawler._crawl_state.current_source = "test.ch"
+        crawler._crawl_state.sources_total = 10
+        crawler._crawl_state.sources_done = 3
+        crawler._crawl_state.started_at = datetime.now(timezone.utc)
+
+        response = client.get("/admin/crawl/status")
+
+        # Should show progress text "X von Y Quellen"
+        assert "3 von 10 Quellen" in response.text
+
+    def test_progress_percentage_calculated(self, client, reset_crawl_state):
+        """Test that progress percentage is shown in the progress bar."""
+        from backend.services import crawler
+        from datetime import datetime, timezone
+
+        crawler._crawl_state.is_running = True
+        crawler._crawl_state.current_source = "test.ch"
+        crawler._crawl_state.sources_total = 4
+        crawler._crawl_state.sources_done = 2
+        crawler._crawl_state.started_at = datetime.now(timezone.utc)
+
+        response = client.get("/admin/crawl/status")
+
+        # 2/4 = 50%, should have style="width: 50%"
+        assert "width: 50%" in response.text
+
+    def test_no_progress_when_sources_total_zero(self, client, reset_crawl_state):
+        """Test that progress bar is not shown when sources_total is 0."""
+        from backend.services import crawler
+
+        crawler._crawl_state.is_running = True
+        crawler._crawl_state.current_source = "test.ch"
+        crawler._crawl_state.sources_total = 0
+        crawler._crawl_state.sources_done = 0
+
+        response = client.get("/admin/crawl/status")
+
+        # Should not show "von" "Quellen" progress text when no sources
+        assert "von 0 Quellen" not in response.text
+
+    def test_eta_display_element_present(self, client, reset_crawl_state):
+        """Test that ETA display element is present when crawl is running."""
+        from backend.services import crawler
+        from datetime import datetime, timezone
+
+        crawler._crawl_state.is_running = True
+        crawler._crawl_state.current_source = "test.ch"
+        crawler._crawl_state.sources_total = 10
+        crawler._crawl_state.sources_done = 5
+        crawler._crawl_state.started_at = datetime.now(timezone.utc)
+
+        response = client.get("/admin/crawl/status")
+
+        # ETA display element should be present
+        assert 'id="eta-display"' in response.text
+
+    def test_started_at_passed_to_template(self, client, reset_crawl_state):
+        """Test that started_at timestamp is passed to template for ETA calculation."""
+        from backend.services import crawler
+        from datetime import datetime, timezone
+
+        test_time = datetime.now(timezone.utc)
+        crawler._crawl_state.is_running = True
+        crawler._crawl_state.current_source = "test.ch"
+        crawler._crawl_state.sources_total = 10
+        crawler._crawl_state.sources_done = 3
+        crawler._crawl_state.started_at = test_time
+
+        response = client.get("/admin/crawl/status")
+
+        # The started_at should be in the response for JavaScript ETA calculation
+        assert "startedAt" in response.text
+
+    def test_no_progress_when_not_running(self, client, reset_crawl_state):
+        """Test that progress bar is not shown when crawl is not running."""
+        response = client.get("/admin/crawl/status")
+
+        # Should show "Bereit" status, not progress bar
+        assert "Bereit" in response.text
+        # Should not have progress-specific elements
+        assert "von" not in response.text or "Quellen" not in response.text
+
+
 class TestCrawlStateHelpers:
     """Tests for crawl state helper functions."""
 

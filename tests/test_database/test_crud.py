@@ -12,6 +12,7 @@ import pytest
 
 from backend.database.crud import (
     clear_source_error,
+    create_crawl_log,
     create_exclude_term,
     create_search_term,
     delete_exclude_term,
@@ -27,6 +28,7 @@ from backend.database.crud import (
     get_all_sources,
     get_all_sources_sorted,
     get_app_settings,
+    get_avg_crawl_duration,
     get_exclude_term_by_id,
     get_exclude_term_by_term,
     get_last_seen_at,
@@ -49,10 +51,11 @@ from backend.database.crud import (
     search_term_to_dict,
     toggle_exclude_term_active,
     toggle_source_active,
+    update_crawl_log,
     update_search_term_match_type,
     update_source_last_crawl,
 )
-from backend.database.models import AppSettings, ExcludeTerm, Match, SearchTerm, Source
+from backend.database.models import AppSettings, CrawlLog, ExcludeTerm, Match, SearchTerm, Source
 
 
 class TestSourceOperations:
@@ -1074,3 +1077,133 @@ class TestAppSettingsAndNewMatchDetection:
 
         count = get_new_match_count(test_session)
         assert count == 2
+
+
+class TestCrawlLogAvgDuration:
+    """Tests for get_avg_crawl_duration function."""
+
+    def test_returns_none_with_no_crawls(self, test_session):
+        """get_avg_crawl_duration returns None when no crawl logs exist."""
+        result = get_avg_crawl_duration(test_session)
+        assert result is None
+
+    def test_returns_none_with_fewer_than_limit_crawls(self, test_session):
+        """get_avg_crawl_duration returns None when fewer than limit crawls exist."""
+        # Create only 2 successful crawls (default limit is 3)
+        for i in range(2):
+            crawl_log = create_crawl_log(test_session, "manual")
+            update_crawl_log(
+                test_session, crawl_log,
+                status="success",
+                duration_seconds=60
+            )
+
+        result = get_avg_crawl_duration(test_session)
+        assert result is None
+
+    def test_returns_average_with_exactly_limit_crawls(self, test_session):
+        """get_avg_crawl_duration returns average when exactly limit crawls exist."""
+        durations = [60, 90, 120]  # Average = 90
+        for duration in durations:
+            crawl_log = create_crawl_log(test_session, "manual")
+            update_crawl_log(
+                test_session, crawl_log,
+                status="success",
+                duration_seconds=duration
+            )
+
+        result = get_avg_crawl_duration(test_session)
+        assert result == 90.0
+
+    def test_returns_average_with_more_than_limit_crawls(self, test_session):
+        """get_avg_crawl_duration considers only the most recent N crawls."""
+        # Create 5 crawls, but only last 3 should be averaged
+        durations = [100, 200, 60, 90, 120]  # Last 3: 60, 90, 120 -> Average = 90
+        for duration in durations:
+            crawl_log = create_crawl_log(test_session, "manual")
+            update_crawl_log(
+                test_session, crawl_log,
+                status="success",
+                duration_seconds=duration
+            )
+
+        result = get_avg_crawl_duration(test_session)
+        assert result == 90.0
+
+    def test_ignores_failed_crawls(self, test_session):
+        """get_avg_crawl_duration only considers successful or partial crawls."""
+        # Create 2 successful and 1 failed
+        for i in range(2):
+            crawl_log = create_crawl_log(test_session, "manual")
+            update_crawl_log(test_session, crawl_log, status="success", duration_seconds=60)
+
+        failed_log = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, failed_log, status="failed", duration_seconds=30)
+
+        result = get_avg_crawl_duration(test_session)
+        # Should return None because only 2 successful crawls (need 3 by default)
+        assert result is None
+
+    def test_includes_partial_crawls(self, test_session):
+        """get_avg_crawl_duration includes partial success crawls."""
+        durations_status = [
+            (60, "success"),
+            (90, "partial"),
+            (120, "success"),
+        ]
+        for duration, status in durations_status:
+            crawl_log = create_crawl_log(test_session, "manual")
+            update_crawl_log(test_session, crawl_log, status=status, duration_seconds=duration)
+
+        result = get_avg_crawl_duration(test_session)
+        assert result == 90.0
+
+    def test_ignores_zero_duration_crawls(self, test_session):
+        """get_avg_crawl_duration ignores crawls with zero duration."""
+        # Create 3 crawls, but one has zero duration
+        crawl_log1 = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, crawl_log1, status="success", duration_seconds=60)
+
+        crawl_log2 = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, crawl_log2, status="success", duration_seconds=0)  # Zero duration
+
+        crawl_log3 = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, crawl_log3, status="success", duration_seconds=90)
+
+        result = get_avg_crawl_duration(test_session)
+        # Only 2 valid crawls, should return None
+        assert result is None
+
+    def test_custom_limit_parameter(self, test_session):
+        """get_avg_crawl_duration respects custom limit parameter."""
+        # Create 4 crawls - with limit=2, we only need 2 successful for a result
+        durations = [60, 90, 120, 150]
+        for duration in durations:
+            crawl_log = create_crawl_log(test_session, "manual")
+            update_crawl_log(test_session, crawl_log, status="success", duration_seconds=duration)
+
+        # With limit=2, should return an average (exact value depends on ordering)
+        # Most importantly: verify it returns a result since we have >=2 crawls
+        result = get_avg_crawl_duration(test_session, limit=2)
+        assert result is not None
+        # The result should be an average of 2 durations from our set
+        # Valid possible averages: (60+90)/2=75, (60+120)/2=90, (60+150)/2=105,
+        #                          (90+120)/2=105, (90+150)/2=120, (120+150)/2=135
+        valid_averages = [75.0, 90.0, 105.0, 120.0, 135.0]
+        assert result in valid_averages
+
+    def test_excludes_cancelled_crawls(self, test_session):
+        """get_avg_crawl_duration excludes cancelled crawls."""
+        # Create 3 crawls: 2 success, 1 cancelled
+        crawl_log1 = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, crawl_log1, status="success", duration_seconds=60)
+
+        cancelled_log = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, cancelled_log, status="cancelled", duration_seconds=30)
+
+        crawl_log2 = create_crawl_log(test_session, "manual")
+        update_crawl_log(test_session, crawl_log2, status="success", duration_seconds=90)
+
+        # Only 2 valid crawls (cancelled is excluded), should return None
+        result = get_avg_crawl_duration(test_session)
+        assert result is None
