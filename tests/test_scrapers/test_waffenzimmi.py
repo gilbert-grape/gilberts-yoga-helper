@@ -221,9 +221,10 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["SIG"])
 
-        # One listing per category, but same HTML so we get 2 listings total
+        # One listing per search term
         assert len(results) >= 1
         assert results[0]["title"] == "SIG P226 9mm"
         assert results[0]["price"] == 1200.0
@@ -244,9 +245,10 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["waffen"])
 
-        # 3 listings per category, 2 categories = 6 total
+        # 3 listings per search term
         assert len(results) >= 3
         titles = [r["title"] for r in results]
         assert "SIG P226 9mm" in titles
@@ -267,7 +269,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["Remington"])
 
         # Find the Remington listing which has "Auf Anfrage"
         remington_listings = [r for r in results if "Remington" in r["title"]]
@@ -288,7 +291,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["SIG"])
 
         assert len(results) >= 1
         assert results[0]["price"] is None
@@ -307,7 +311,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["SIG"])
 
         assert len(results) >= 1
         assert results[0]["image_url"] is None
@@ -326,7 +331,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["test"])
 
         assert len(results) >= 1
         # URLs should be absolute
@@ -374,7 +380,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.logger") as mock_logger:
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["test"])
 
         assert results == []
         mock_logger.error.assert_called_once()
@@ -394,7 +401,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["test"])
 
         assert results == []
 
@@ -412,7 +420,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["SIG"])
 
         assert results[0]["source"] == "waffenzimmi.ch"
 
@@ -430,7 +439,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["Browning"])
 
         assert len(results) >= 1
         assert results[0]["title"] == "Browning Hi-Power"
@@ -450,7 +460,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["Glock"])
 
         assert len(results) >= 1
         # Should get the sale price (750) from the ins element
@@ -551,7 +562,8 @@ class TestScrapeWaffenzimmi:
 
         with patch("backend.scrapers.waffenzimmi.create_http_client", return_value=mock_client):
             with patch("backend.scrapers.waffenzimmi.delay_between_requests", new_callable=AsyncMock):
-                results = await scrape_waffenzimmi()
+                with patch("backend.services.crawler.add_crawl_log"):
+                    results = await scrape_waffenzimmi(search_terms=["test"])
 
         assert len(results) >= 1
         assert results[0]["image_url"] is None  # Placeholder should be skipped

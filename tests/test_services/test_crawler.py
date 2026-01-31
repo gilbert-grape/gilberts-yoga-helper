@@ -232,7 +232,12 @@ class TestRunCrawl:
             "waffenboerse.ch": make_async_scraper(mock_results),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # Scrapers ran
@@ -256,7 +261,12 @@ class TestRunCrawl:
             "waffenboerse.ch": make_tracking_scraper("waffenboerse"),
             "waffengebraucht.ch": make_tracking_scraper("waffengebraucht"),
             "waffenzimmi.ch": make_tracking_scraper("waffenzimmi"),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             run_crawl(test_session)
 
         # All scrapers executed
@@ -279,7 +289,12 @@ class TestRunCrawl:
             "waffenboerse.ch": failing_scraper,
             "waffengebraucht.ch": success_scraper,
             "waffenzimmi.ch": success_scraper,
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # All scrapers attempted despite failure
@@ -295,7 +310,12 @@ class TestRunCrawl:
             "waffenboerse.ch": make_async_scraper([]),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             before = datetime.now(timezone.utc).replace(tzinfo=None)
             run_crawl(test_session)
             after = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -312,7 +332,12 @@ class TestRunCrawl:
             "waffenboerse.ch": failing_scraper,
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             run_crawl(test_session)
 
         source = test_session.query(Source).filter(Source.name == "waffenboerse.ch").first()
@@ -331,7 +356,12 @@ class TestRunCrawl:
             "waffenboerse.ch": make_async_scraper([]),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             run_crawl(test_session)
 
         test_session.refresh(source)
@@ -366,7 +396,12 @@ class TestRunCrawlWithMatching:
             "waffenboerse.ch": make_async_scraper(mock_listings),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # Only Glock should match
@@ -395,7 +430,12 @@ class TestRunCrawlWithMatching:
             "waffenboerse.ch": make_async_scraper(mock_listings),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             # First crawl
             result1 = run_crawl(test_session)
             assert result1.new_matches == 1
@@ -439,7 +479,12 @@ class TestRunCrawlWithMatching:
             "waffenboerse.ch": make_async_scraper(mock_listings),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # Glock and SIG should match, CZ should not
@@ -464,7 +509,12 @@ class TestRunCrawlWithMatching:
             "waffenboerse.ch": make_async_scraper(mock_listings),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # Same listing matches both terms
@@ -485,7 +535,12 @@ class TestCrawlSummaryLogging:
             "waffenboerse.ch": make_async_scraper([]),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             with patch("backend.services.crawler._log_crawl_summary") as mock_log:
                 result = run_crawl(test_session)
 
@@ -504,7 +559,12 @@ class TestCrawlSummaryLogging:
             "waffenboerse.ch": failing_scraper,
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # Verify failed sources are tracked in result
@@ -521,7 +581,12 @@ class TestCrawlDuration:
             "waffenboerse.ch": make_async_scraper([]),
             "waffengebraucht.ch": make_async_scraper([]),
             "waffenzimmi.ch": make_async_scraper([]),
-        }):
+        }, clear=True), \
+             patch.dict(SOURCE_BASE_URLS, {
+            "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
+        }, clear=True):
             result = run_crawl(test_session)
 
         # Duration should be non-negative (may be 0.0 for very fast runs)
@@ -943,9 +1008,13 @@ class TestCrawlResultTimestamps:
         """Test that started_at and completed_at are set."""
         with patch.dict(SCRAPER_REGISTRY, {
             "waffenboerse.ch": make_async_scraper([]),
+            "waffengebraucht.ch": make_async_scraper([]),
+            "waffenzimmi.ch": make_async_scraper([]),
         }, clear=True), \
              patch.dict(SOURCE_BASE_URLS, {
             "waffenboerse.ch": "https://waffenboerse.ch",
+            "waffengebraucht.ch": "https://waffengebraucht.ch",
+            "waffenzimmi.ch": "https://waffenzimmi.ch",
         }, clear=True):
             result = run_crawl(test_session)
 

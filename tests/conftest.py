@@ -12,6 +12,27 @@ from sqlalchemy.orm import sessionmaker
 
 from backend.main import app
 from backend.database.connection import Base
+from backend.services.crawler import _crawl_state, clear_crawl_log
+
+
+@pytest.fixture(autouse=True)
+def reset_crawl_state():
+    """Reset global crawl state before each test to ensure test isolation."""
+    # Reset before test
+    _crawl_state.is_running = False
+    _crawl_state.cancel_requested = False
+    _crawl_state.current_source = None
+    _crawl_state.last_result = None
+    clear_crawl_log()
+
+    yield
+
+    # Reset after test
+    _crawl_state.is_running = False
+    _crawl_state.cancel_requested = False
+    _crawl_state.current_source = None
+    _crawl_state.last_result = None
+    clear_crawl_log()
 
 
 @pytest.fixture
