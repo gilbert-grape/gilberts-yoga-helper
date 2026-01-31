@@ -206,6 +206,38 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
 
+def format_duration(seconds: float | None) -> str:
+    """
+    Format duration in seconds to a human-readable string.
+
+    Examples:
+        45 -> "45s"
+        90 -> "1.5min"
+        300 -> "5min"
+        3600 -> "1h"
+        5400 -> "1.5h"
+    """
+    if seconds is None or seconds == 0:
+        return "-"
+
+    if seconds < 60:
+        return f"{int(seconds)}s"
+    elif seconds < 3600:
+        minutes = seconds / 60
+        if minutes == int(minutes):
+            return f"{int(minutes)}min"
+        return f"{minutes:.1f}min"
+    else:
+        hours = seconds / 3600
+        if hours == int(hours):
+            return f"{int(hours)}h"
+        return f"{hours:.1f}h"
+
+
+# Register custom Jinja2 filter
+templates.env.filters["format_duration"] = format_duration
+
+
 @app.get("/")
 async def dashboard(
     request: Request,

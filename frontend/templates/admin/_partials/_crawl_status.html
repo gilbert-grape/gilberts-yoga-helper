@@ -236,7 +236,7 @@
                 </div>
                 <div class="bg-gray-50 rounded-lg p-3">
                     <dt class="text-sm font-medium text-gray-500">Dauer</dt>
-                    <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ "%.1f"|format(last_result.duration_seconds) }}s</dd>
+                    <dd class="mt-1 text-2xl font-semibold text-gray-900">{{ last_result.duration_seconds|format_duration }}</dd>
                 </div>
             </div>
 
@@ -336,7 +336,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                {{ log.duration_seconds }}s
+                                {{ log.duration_seconds|format_duration }}
                             </td>
                         </tr>
                         {% endfor %}
