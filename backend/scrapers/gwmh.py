@@ -111,7 +111,11 @@ async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResult
                             price = _extract_price_from_page(detail_response.text)
 
                             # Build image URL - images are served from the base URL (not epages path)
+                            # Replace _xs (extra small) with _m (medium) for better quality
                             image_path = product.get("image", "")
+                            if image_path:
+                                image_path = image_path.replace("_xs.jpg", "_m.jpg")
+                                image_path = image_path.replace("_xs.png", "_m.png")
                             image_url = f"{BASE_URL}{image_path}" if image_path else None
 
                             result = ScraperResult(
