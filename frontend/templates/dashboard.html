@@ -54,18 +54,35 @@
             </div>
         </div>
 
-        {# Toggle switches #}
-        <label class="inline-flex items-center cursor-pointer">
+        {# Mobile: Icon-only toggle buttons #}
+        <button id="compact-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors" title="Kompakt">
+            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+        </button>
+        <button id="expanded-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors" title="Alle öffnen">
+            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+        </button>
+        <button id="filter-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors {% if filter_enabled %}bg-blue-100 border-blue-300{% endif %}" title="Duplikate filtern">
+            <svg class="w-5 h-5 {% if filter_enabled %}text-blue-600{% else %}text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+        </button>
+
+        {# Desktop: Toggle switches with labels #}
+        <label class="hidden sm:inline-flex items-center cursor-pointer">
             <input type="checkbox" id="compact-checkbox" class="sr-only peer">
             <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             <span class="ms-2 text-sm text-gray-700">Kompakt</span>
         </label>
-        <label class="inline-flex items-center cursor-pointer">
+        <label class="hidden sm:inline-flex items-center cursor-pointer">
             <input type="checkbox" id="expanded-checkbox" class="sr-only peer">
             <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             <span class="ms-2 text-sm text-gray-700">Offen</span>
         </label>
-        <label class="inline-flex items-center cursor-pointer">
+        <label class="hidden sm:inline-flex items-center cursor-pointer">
             <input type="checkbox" id="filter-checkbox" class="sr-only peer" {% if filter_enabled %}checked{% endif %}>
             <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             <span class="ms-2 text-sm text-gray-700">Filter</span>
@@ -212,30 +229,45 @@
 
     // Compact mode - load from cookie and apply
     const compactCheckbox = document.getElementById('compact-checkbox');
+    const compactBtnMobile = document.getElementById('compact-btn-mobile');
     const isCompact = getCookie('compact_mode') !== 'false'; // Default to true
 
-    if (isCompact) {
-        document.body.classList.add('compact-mode');
-        compactCheckbox.checked = true;
-    }
-
-    compactCheckbox.addEventListener('change', function() {
-        if (this.checked) {
+    function setCompactMode(enabled) {
+        if (enabled) {
             document.body.classList.add('compact-mode');
-            setCookie('compact_mode', 'true', 365);
+            compactBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
+            compactBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
         } else {
             document.body.classList.remove('compact-mode');
-            setCookie('compact_mode', 'false', 365);
+            compactBtnMobile.classList.remove('bg-blue-100', 'border-blue-300');
+            compactBtnMobile.querySelector('svg').classList.replace('text-blue-600', 'text-gray-500');
         }
+        if (compactCheckbox) compactCheckbox.checked = enabled;
+        setCookie('compact_mode', enabled ? 'true' : 'false', 365);
+    }
+
+    // Initialize compact mode
+    if (isCompact) {
+        document.body.classList.add('compact-mode');
+        if (compactCheckbox) compactCheckbox.checked = true;
+        compactBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
+        compactBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
+    }
+
+    if (compactCheckbox) {
+        compactCheckbox.addEventListener('change', function() {
+            setCompactMode(this.checked);
+        });
+    }
+    compactBtnMobile.addEventListener('click', function() {
+        const newState = !document.body.classList.contains('compact-mode');
+        setCompactMode(newState);
     });
 
     // Expanded mode - load from cookie and apply
     const expandedCheckbox = document.getElementById('expanded-checkbox');
+    const expandedBtnMobile = document.getElementById('expanded-btn-mobile');
     const isExpanded = getCookie('expanded_mode') !== 'false'; // Default to true
-
-    if (isExpanded) {
-        expandedCheckbox.checked = true;
-    }
 
     // Function to expand/collapse all accordions
     function setAllAccordions(expanded) {
@@ -256,14 +288,35 @@
         });
     }
 
-    // Apply expanded state on page load
+    function setExpandedMode(enabled) {
+        setAllAccordions(enabled);
+        if (enabled) {
+            expandedBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
+            expandedBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
+        } else {
+            expandedBtnMobile.classList.remove('bg-blue-100', 'border-blue-300');
+            expandedBtnMobile.querySelector('svg').classList.replace('text-blue-600', 'text-gray-500');
+        }
+        if (expandedCheckbox) expandedCheckbox.checked = enabled;
+        setCookie('expanded_mode', enabled ? 'true' : 'false', 365);
+    }
+
+    // Initialize expanded mode
     if (isExpanded) {
+        if (expandedCheckbox) expandedCheckbox.checked = true;
+        expandedBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
+        expandedBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
         setAllAccordions(true);
     }
 
-    expandedCheckbox.addEventListener('change', function() {
-        setCookie('expanded_mode', this.checked ? 'true' : 'false', 365);
-        setAllAccordions(this.checked);
+    if (expandedCheckbox) {
+        expandedCheckbox.addEventListener('change', function() {
+            setExpandedMode(this.checked);
+        });
+    }
+    expandedBtnMobile.addEventListener('click', function() {
+        const newState = expandedCheckbox ? !expandedCheckbox.checked : true;
+        setExpandedMode(newState);
     });
 
     // Initialize accordion collapse/expand functionality (manual toggle)
@@ -287,11 +340,23 @@
         });
     });
 
-    // Filter checkbox - save to cookie and reload with query param
-    document.getElementById('filter-checkbox').addEventListener('change', function() {
-        const filterValue = this.checked ? 'true' : 'false';
-        setCookie('filter_mode', filterValue, 365);
-        window.location.href = '/?filter=' + filterValue;
+    // Filter mode
+    const filterCheckbox = document.getElementById('filter-checkbox');
+    const filterBtnMobile = document.getElementById('filter-btn-mobile');
+
+    function setFilterMode(enabled) {
+        setCookie('filter_mode', enabled ? 'true' : 'false', 365);
+        window.location.href = '/?filter=' + (enabled ? 'true' : 'false');
+    }
+
+    if (filterCheckbox) {
+        filterCheckbox.addEventListener('change', function() {
+            setFilterMode(this.checked);
+        });
+    }
+    filterBtnMobile.addEventListener('click', function() {
+        const isCurrentlyEnabled = this.classList.contains('bg-blue-100');
+        setFilterMode(!isCurrentlyEnabled);
     });
 
     // Time filter dropdown - save to cookie and reload
