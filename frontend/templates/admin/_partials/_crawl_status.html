@@ -39,6 +39,58 @@
                         <span class="ml-2 text-gray-500">({{ current_source }})</span>
                     {% endif %}
                 </div>
+                {# Progress Bar and ETA #}
+                {% if sources_total and sources_total > 0 %}
+                <div class="mt-3 w-full">
+                    {# Progress bar #}
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700">{{ sources_done }} von {{ sources_total }} Quellen</span>
+                        <span id="eta-display" class="text-sm text-gray-500"></span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: {{ (sources_done / sources_total * 100)|round|int }}%"></div>
+                    </div>
+                </div>
+                <script>
+                (function() {
+                    // ETA calculation
+                    var startedAt = '{{ started_at }}';
+                    var avgDuration = {{ avg_duration|default('null', true) }};
+                    var sourcesDone = {{ sources_done }};
+                    var sourcesTotal = {{ sources_total }};
+
+                    function updateETA() {
+                        var etaDisplay = document.getElementById('eta-display');
+                        if (!etaDisplay || !startedAt) return;
+
+                        var elapsed = (Date.now() - new Date(startedAt).getTime()) / 1000;
+                        var remainingMinutes = null;
+
+                        if (avgDuration && avgDuration > 0) {
+                            // Historical calculation
+                            var remaining = Math.max(0, avgDuration - elapsed);
+                            remainingMinutes = Math.ceil(remaining / 60);
+                        } else if (sourcesDone > 0) {
+                            // Real-time calculation
+                            var perSource = elapsed / sourcesDone;
+                            var remaining = perSource * (sourcesTotal - sourcesDone);
+                            remainingMinutes = Math.ceil(remaining / 60);
+                        }
+
+                        if (remainingMinutes !== null && remainingMinutes >= 0) {
+                            if (remainingMinutes === 0) {
+                                etaDisplay.textContent = 'Fast fertig...';
+                            } else if (remainingMinutes === 1) {
+                                etaDisplay.textContent = 'ca. 1 Minute';
+                            } else {
+                                etaDisplay.textContent = 'ca. ' + remainingMinutes + ' Minuten';
+                            }
+                        }
+                    }
+                    updateETA();
+                })();
+                </script>
+                {% endif %}
             {% else %}
                 <div class="flex items-center mt-2">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">

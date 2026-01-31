@@ -348,5 +348,108 @@
         setCookie('selected_sources', selectedIds.join(','), 365);
         window.location.reload();
     });
+
+    // Lazy-load images for matches without images
+    // Uses IntersectionObserver to only load when visible
+    (function() {
+        const imageContainers = document.querySelectorAll('[data-lazy-image-url]');
+        if (imageContainers.length === 0) return;
+
+        // Cache for fetched images (avoid duplicate requests)
+        const imageCache = {};
+
+        // Queue for rate limiting requests
+        let pendingRequests = 0;
+        const maxConcurrentRequests = 3;
+        const requestQueue = [];
+
+        function processQueue() {
+            while (pendingRequests < maxConcurrentRequests && requestQueue.length > 0) {
+                const task = requestQueue.shift();
+                task();
+            }
+        }
+
+        function fetchImage(container) {
+            const url = container.dataset.lazyImageUrl;
+            if (!url) return;
+
+            // Check cache first
+            if (imageCache[url] !== undefined) {
+                if (imageCache[url]) {
+                    showImage(container, imageCache[url]);
+                } else {
+                    showPlaceholder(container);
+                }
+                return;
+            }
+
+            // Add to queue
+            requestQueue.push(() => {
+                pendingRequests++;
+
+                fetch('/api/fetch-image?url=' + encodeURIComponent(url))
+                    .then(response => response.json())
+                    .then(data => {
+                        imageCache[url] = data.image_url || null;
+                        if (data.image_url) {
+                            showImage(container, data.image_url);
+                        } else {
+                            showPlaceholder(container);
+                        }
+                    })
+                    .catch(() => {
+                        imageCache[url] = null;
+                        showPlaceholder(container);
+                    })
+                    .finally(() => {
+                        pendingRequests--;
+                        processQueue();
+                    });
+            });
+
+            processQueue();
+        }
+
+        function showImage(container, imageUrl) {
+            const placeholder = container.querySelector('.lazy-image-placeholder');
+            if (placeholder) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = '';
+                img.className = 'w-full h-full object-cover';
+                img.loading = 'lazy';
+                img.onerror = function() {
+                    this.remove();
+                    showPlaceholder(container);
+                };
+                placeholder.replaceWith(img);
+            }
+        }
+
+        function showPlaceholder(container) {
+            const placeholder = container.querySelector('.lazy-image-placeholder');
+            if (placeholder) {
+                // Remove animation, keep static placeholder
+                placeholder.querySelector('svg').classList.remove('animate-pulse');
+            }
+        }
+
+        // Use IntersectionObserver for lazy loading
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    fetchImage(entry.target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            rootMargin: '100px' // Start loading 100px before visible
+        });
+
+        imageContainers.forEach(container => {
+            observer.observe(container);
+        });
+    })();
 </script>
 {% endblock %}

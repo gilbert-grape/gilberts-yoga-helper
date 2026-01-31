@@ -909,3 +909,102 @@ async def clear_matches_db(request: Request, db: Session = Depends(get_db)):
             "success": f"Datenbank geleert ({count} Treffer gelöscht).",
         }
     )
+
+
+# =============================================================================
+# Image Proxy API
+# =============================================================================
+
+
+@app.get("/api/fetch-image")
+async def fetch_image_from_url(url: str):
+    """
+    Fetch og:image or first product image from a given URL.
+
+    Used to lazy-load images for listings that don't have images
+    (e.g., from sources that are JavaScript SPAs).
+
+    Args:
+        url: The URL to fetch the image from
+
+    Returns:
+        JSON with image_url if found, or null if not
+    """
+    import httpx
+    import re
+    from urllib.parse import urljoin
+
+    if not url:
+        return {"image_url": None, "error": "No URL provided"}
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=10.0,
+            follow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; ImageFetcher/1.0)"}
+        ) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            html = response.text
+
+            # Try og:image first (most reliable for product pages)
+            og_match = re.search(
+                r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+                html, re.IGNORECASE
+            )
+            if not og_match:
+                # Try alternate format
+                og_match = re.search(
+                    r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+                    html, re.IGNORECASE
+                )
+
+            if og_match:
+                image_url = og_match.group(1)
+                # Make absolute URL if relative
+                if not image_url.startswith(('http://', 'https://')):
+                    image_url = urljoin(url, image_url)
+                return {"image_url": image_url}
+
+            # Try twitter:image
+            twitter_match = re.search(
+                r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
+                html, re.IGNORECASE
+            )
+            if twitter_match:
+                image_url = twitter_match.group(1)
+                if not image_url.startswith(('http://', 'https://')):
+                    image_url = urljoin(url, image_url)
+                return {"image_url": image_url}
+
+            # Try to find first product image (common patterns)
+            # Look for images with common product-related classes or attributes
+            img_patterns = [
+                # Images with product-related src patterns
+                r'<img[^>]+src=["\']([^"\']+(?:product|item|artikel|waffe|gun)[^"\']*\.(?:jpg|jpeg|png|webp))["\']',
+                # Images hosted on common image hosts (like postimg for egun.de)
+                r'<img[^>]+src=["\'](https?://(?:i\.postimg\.cc|imgur\.com|cloudinary\.com)[^"\']+)["\']',
+                # Any image that's not a logo, icon, or tiny
+                r'<img[^>]+src=["\']([^"\']+\.(?:jpg|jpeg|png|webp))["\']',
+            ]
+
+            for pattern in img_patterns:
+                matches = re.findall(pattern, html, re.IGNORECASE)
+                for img_url in matches:
+                    # Skip logos, icons, placeholders
+                    lower_url = img_url.lower()
+                    if any(skip in lower_url for skip in ['logo', 'icon', 'placeholder', 'avatar', 'favicon', 'sprite', 'banner', 'ad-', 'ads/']):
+                        continue
+                    # Make absolute URL
+                    if not img_url.startswith(('http://', 'https://')):
+                        img_url = urljoin(url, img_url)
+                    return {"image_url": img_url}
+
+            return {"image_url": None}
+
+    except httpx.TimeoutException:
+        logger.warning(f"Timeout fetching image from {url}")
+        return {"image_url": None, "error": "Timeout"}
+    except Exception as e:
+        logger.warning(f"Error fetching image from {url}: {e}")
+        return {"image_url": None, "error": str(e)}
