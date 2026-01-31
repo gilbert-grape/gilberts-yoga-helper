@@ -275,6 +275,25 @@ ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
    sqlite3 data/gilberts-gun-crawler.db "PRAGMA integrity_check;"
    ```
 
+### Poetry/lxml Installation Fails
+
+If `poetry install` fails with "Please make sure the libxml2 and libxslt development packages are installed":
+
+1. Install system dependencies:
+   ```bash
+   sudo apt-get update && sudo apt-get install -y libxml2-dev libxslt-dev
+   ```
+
+2. Clear the broken virtualenv cache:
+   ```bash
+   rm -rf ~/.cache/pypoetry/virtualenvs/gilberts-*
+   ```
+
+3. Retry installation:
+   ```bash
+   poetry install --only main
+   ```
+
 ### Crawl Not Running
 
 1. Check cron is installed:
