@@ -39,6 +39,7 @@ data/*.db
 data/*.db-wal
 data/*.db-shm
 data/backups/*.db
+data/*.lock
 
 # Logs
 logs/*.log
