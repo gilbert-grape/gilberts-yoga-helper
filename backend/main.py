@@ -207,7 +207,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
 
-def format_duration(seconds: float | None) -> str:
+def format_duration(seconds: Optional[float]) -> str:
     """
     Format duration in seconds to a human-readable string.
 
