@@ -25,6 +25,9 @@ sudo apt update && sudo apt upgrade -y
 # Install required packages
 sudo apt install -y python3 python3-pip python3-venv git sqlite3
 
+# Install build dependencies for lxml (required for HTML parsing)
+sudo apt install -y libxml2-dev libxslt-dev
+
 # Install Poetry (Python dependency manager)
 curl -sSL https://install.python-poetry.org | python3 -
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
