@@ -2,7 +2,7 @@
 petitesannonces.ch Scraper
 
 Scrapes listings from petitesannonces.ch (Swiss French classifieds site).
-Category 12 appears to be firearms/weapons related.
+Category 12 (tid=12) is the weapons/firearms category.
 """
 import re
 from typing import List, Optional
@@ -22,19 +22,19 @@ from backend.utils.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://www.petitesannonces.ch"
-# Category 12 - likely firearms/weapons
-CATEGORY_URL = f"{BASE_URL}/r/12"
-SEARCH_URL = f"{BASE_URL}/q"
+# Search URL with tid=12 to filter to weapons category
+SEARCH_URL = f"{BASE_URL}/recherche/"
 SOURCE_NAME = "petitesannonces.ch"
 MAX_PAGES = 10  # Max pages per search term
+CATEGORY_ID = "12"  # Armes (weapons) category
 
 
 async def scrape_petitesannonces(search_terms: Optional[List[str]] = None) -> ScraperResults:
     """
     Scrape listings from petitesannonces.ch using search.
 
-    This scraper uses the site's search functionality to find relevant listings.
-    If no search_terms are provided, it will fetch them from the database.
+    This scraper uses the site's search functionality to find relevant listings
+    in the weapons category (tid=12).
 
     Args:
         search_terms: Optional list of search terms. If None, fetches from database.
@@ -68,12 +68,11 @@ async def scrape_petitesannonces(search_terms: Optional[List[str]] = None) -> Sc
 
                 page = 1
                 while page <= MAX_PAGES:
-                    # Construct search URL with query parameter
-                    # petitesannonces.ch uses /q/searchterm format and ?p=N for pagination
+                    # Construct search URL: /recherche/?q=term&tid=12&p=N
                     encoded_term = quote_plus(term)
-                    url = f"{SEARCH_URL}/{encoded_term}"
+                    url = f"{SEARCH_URL}?q={encoded_term}&tid={CATEGORY_ID}"
                     if page > 1:
-                        url += f"?p={page}"
+                        url += f"&p={page}"
                     add_crawl_log(f"    Seite {page}...")
 
                     response = await client.get(url)
@@ -82,8 +81,7 @@ async def scrape_petitesannonces(search_terms: Optional[List[str]] = None) -> Sc
                     # Parse HTML
                     soup = BeautifulSoup(response.text, "lxml")
 
-                    # Find all listing rows in the table
-                    # The site uses a table-based layout with rows for each listing
+                    # Find all listings (both normal and premium)
                     listings = _find_listings(soup)
 
                     if not listings:
@@ -126,32 +124,32 @@ async def scrape_petitesannonces(search_terms: Optional[List[str]] = None) -> Sc
 
 
 def _find_listings(soup: BeautifulSoup) -> List[Tag]:
-    """Find all listing elements on the page."""
+    """Find all listing elements on the page.
+
+    The site has two types of listings:
+    - Normal listings: div.ele (with child divs for image, title, price, location, date)
+    - Premium listings: div.box (featured ads at the top)
+    """
     listings = []
 
-    # Try to find table rows that contain listings
-    # petitesannonces.ch uses a table layout with columns for image, title, price, location, date
-    # Look for rows with links to detail pages
-    rows = soup.select("tr")
-    for row in rows:
-        # A listing row should have a link to an ad (typically /a/XXXXX pattern)
-        link = row.select_one("a[href*='/a/']")
-        if link:
-            listings.append(row)
+    # Find normal listings (div.ele contains the listing row)
+    normal_listings = soup.select("div.ele")
+    listings.extend(normal_listings)
 
-    # If no table rows found, try other common patterns
-    if not listings:
-        # Try div-based listings
-        listings = soup.select(".annonce, .listing, .ad-item, [class*='annonce']")
+    # Find premium listings (div.box with ad links)
+    premium_boxes = soup.select("div.box")
+    for box in premium_boxes:
+        # Only include if it has an ad link (not just any box)
+        if box.select_one("a[href^='/a/']"):
+            listings.append(box)
 
     return listings
 
 
 def _has_next_page(soup: BeautifulSoup, current_page: int) -> bool:
     """Check if there's a next page link in pagination."""
-    # Look for pagination links - petitesannonces uses ?p=N format
-    # Check for page number links with higher page numbers
-    pagination_links = soup.select("a[href*='?p='], a[href*='&p=']")
+    # Look for pagination links with ?p=N or &p=N
+    pagination_links = soup.select("a[href*='&p='], a[href*='?p=']")
     for link in pagination_links:
         href = link.get("href", "")
         match = re.search(r"[?&]p=(\d+)", str(href))
@@ -160,8 +158,8 @@ def _has_next_page(soup: BeautifulSoup, current_page: int) -> bool:
             if page_num > current_page:
                 return True
 
-    # Also check for "next" or "suivant" (French) links
-    next_link = soup.select_one("a:-soup-contains('Suivant'), a:-soup-contains('»'), a.next, a[rel='next']")
+    # Check for "Suivant" (Next) or >> links
+    next_link = soup.select_one("a:-soup-contains('Suivant'), a:-soup-contains('»'), a.next")
     if next_link:
         return True
 
@@ -196,82 +194,67 @@ def _parse_listing(listing: Tag) -> Optional[ScraperResult]:
 
 
 def _extract_title(listing: Tag) -> Optional[str]:
-    """Extract title from listing element."""
-    # Try to find the title - usually in a link to the detail page
-    # Look for link with /a/ pattern (annonce/ad)
-    title_link = listing.select_one("a[href*='/a/']")
-    if title_link:
-        title = title_link.get_text(strip=True)
+    """Extract title from listing element.
+
+    Normal listings: title is in div.elm > a
+    Premium listings: title is in div.prmt > a
+    """
+    # Try normal listing structure first (div.elm contains the title link)
+    title_elem = listing.select_one("div.elm a")
+    if title_elem:
+        title = title_elem.get_text(strip=True)
         if title:
             return title
 
-    # Try other common selectors
-    title_selectors = [
-        ".title",
-        ".titre",
-        "h2",
-        "h3",
-        ".annonce-title",
-        "td:nth-child(2) a",  # Second column in table (after image)
-    ]
+    # Try premium listing structure (div.prmt contains the title link)
+    title_elem = listing.select_one("div.prmt a")
+    if title_elem:
+        title = title_elem.get_text(strip=True)
+        if title:
+            return title
 
-    for selector in title_selectors:
-        elem = listing.select_one(selector)
-        if elem:
-            title = elem.get_text(strip=True)
-            if title:
-                return title
+    # Fallback: any link with /a/ path that has text
+    for link in listing.select("a[href^='/a/']"):
+        text = link.get_text(strip=True)
+        if text and len(text) > 5:
+            return text
 
     return None
 
 
 def _extract_link(listing: Tag) -> Optional[str]:
     """Extract link from listing element."""
-    # Look for link to detail page (typically /a/XXXXX pattern)
-    link_elem = listing.select_one("a[href*='/a/']")
+    # Look for link to detail page (/a/XXXXX pattern)
+    link_elem = listing.select_one("a[href^='/a/']")
     if link_elem and link_elem.get("href"):
         href = link_elem["href"]
         if isinstance(href, list):
             href = href[0]
         return make_absolute_url(BASE_URL, href)
 
-    # Fallback: any link in the listing
-    link_elem = listing.select_one("a[href]")
-    if link_elem and link_elem.get("href"):
-        href = link_elem["href"]
-        if isinstance(href, list):
-            href = href[0]
-        # Skip category/navigation links
-        if "/r/" not in href and "/q/" not in href:
-            return make_absolute_url(BASE_URL, href)
-
     return None
 
 
 def _extract_price(listing: Tag) -> Optional[float]:
-    """Extract price from listing element."""
-    # petitesannonces.ch shows prices like "270.-" or "1'234.-"
-    # Look for price in dedicated column or element
-    price_selectors = [
-        ".price",
-        ".prix",
-        "[class*='price']",
-        "[class*='prix']",
-        "td:nth-child(3)",  # Third column (price column in table)
-    ]
+    """Extract price from listing element.
 
-    for selector in price_selectors:
-        elem = listing.select_one(selector)
-        if elem:
-            price_str = elem.get_text(strip=True)
-            price = parse_price(price_str)
-            if price is not None:
-                return price
+    Normal listings: price is in div.ela.elsp or div.elsp
+    Premium listings: price might be in the description text
+    Prices are in Swiss format: "1'234.-" or "500.-"
+    """
+    # Try normal listing price element (div with both ela and elsp classes)
+    price_elem = listing.select_one("div.elsp, div.ela.elsp")
+    if price_elem:
+        price_str = price_elem.get_text(strip=True)
+        price = parse_price(price_str)
+        if price is not None:
+            return price
 
-    # Try to find price pattern in the listing text
-    # Swiss format: "270.-" or "1'234.-" or "CHF 500"
+    # Try to find price pattern in text
+    # Swiss format: "1'234.-" or "500.-"
     text = listing.get_text()
-    # Pattern for Swiss price format with .- suffix
+
+    # Pattern for Swiss price with .- suffix
     match = re.search(r"(\d[\d']*)\s*\.-", text)
     if match:
         price_str = match.group(1)
@@ -286,9 +269,16 @@ def _extract_price(listing: Tag) -> Optional[float]:
 
 
 def _extract_image_url(listing: Tag) -> Optional[str]:
-    """Extract image URL from listing element."""
-    # Look for thumbnail image
-    img_elem = listing.select_one("img")
+    """Extract image URL from listing element.
+
+    Normal listings: image in div.elf > a > img
+    Premium listings: image in a > img directly
+    """
+    # Try normal listing image (in div.elf)
+    img_elem = listing.select_one("div.elf img")
+    if not img_elem:
+        # Try premium listing or any image
+        img_elem = listing.select_one("img")
 
     if img_elem:
         # Try different image source attributes
@@ -299,7 +289,6 @@ def _extract_image_url(listing: Tag) -> Optional[str]:
                     img_url = img_url[0]
                 # Skip placeholder images
                 if "placeholder" not in img_url.lower() and "blank" not in img_url.lower():
-                    # petitesannonces.ch uses paths like /i/s/523/... for thumbnails
                     return make_absolute_url(BASE_URL, img_url)
 
     return None

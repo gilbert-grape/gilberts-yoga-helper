@@ -43,6 +43,8 @@ from backend.scrapers.waffenboerse import scrape_waffenboerse
 from backend.scrapers.waffengebraucht import scrape_waffengebraucht
 from backend.scrapers.waffenzimmi import scrape_waffenzimmi
 from backend.scrapers.petitesannonces import scrape_petitesannonces
+from backend.scrapers.renehild import scrape_renehild
+from backend.scrapers.vnsm import scrape_vnsm
 
 __all__ = [
     # Type definitions
@@ -68,4 +70,6 @@ __all__ = [
     "scrape_waffengebraucht",
     "scrape_waffenzimmi",
     "scrape_petitesannonces",
+    "scrape_renehild",
+    "scrape_vnsm",
 ]
