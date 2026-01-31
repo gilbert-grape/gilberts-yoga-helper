@@ -9,11 +9,16 @@ Usage:
     python -m backend.cli crawl
     python -m backend.cli --help
 """
+import asyncio
 import sys
 import argparse
 
 from backend.database import SessionLocal
-from backend.services.crawler import run_crawl
+from backend.services.crawler import (
+    run_crawl_async,
+    get_lock_holder_info,
+    is_crawl_locked,
+)
 from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -26,13 +31,22 @@ def cmd_crawl(args: argparse.Namespace) -> int:
     Returns:
         0 on success (even with partial failures)
         1 on complete failure or exception
+        2 if another crawl is already running
     """
+    # Check if a crawl is already running (before starting)
+    if is_crawl_locked():
+        lock_holder = get_lock_holder_info()
+        print(f"Crawl skipped - another crawl is already running: {lock_holder}", file=sys.stderr)
+        logger.warning(f"CLI crawl skipped - lock held by: {lock_holder}")
+        return 2
+
     logger.info("Starting crawl from CLI")
     print("Starting crawl...")
 
     session = SessionLocal()
     try:
-        result = run_crawl(session)
+        # Use trigger="cli" to identify CLI-initiated crawls in the lock file
+        result = asyncio.run(run_crawl_async(session, trigger="cli"))
 
         # Print summary to stdout (for cron logs)
         print("\n" + "=" * 50)
@@ -61,6 +75,14 @@ def cmd_crawl(args: argparse.Namespace) -> int:
         else:
             print("\nCrawl failed - all sources failed.")
             return 1
+
+    except RuntimeError as e:
+        # Lock acquisition failed (race condition)
+        if "already running" in str(e):
+            print(f"Crawl skipped - another crawl started: {e}", file=sys.stderr)
+            logger.warning(f"CLI crawl aborted due to lock: {e}")
+            return 2
+        raise
 
     except Exception as e:
         logger.exception(f"Crawl failed with exception: {e}")

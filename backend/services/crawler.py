@@ -8,11 +8,14 @@ Key features:
 - Sequential execution (not parallel) for Pi resource constraints
 - Error isolation: one scraper failure doesn't stop others
 - Comprehensive logging and result tracking
+- File-based locking to prevent concurrent crawls (Web UI, CLI, Cronjob)
 """
 import asyncio
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
@@ -48,6 +51,193 @@ from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+
+# =============================================================================
+# File-based Lock for Cross-Process Crawl Prevention
+# =============================================================================
+
+# Lock file location (in data directory, same as database)
+LOCK_FILE_PATH = Path(__file__).parent.parent.parent / "data" / "crawl.lock"
+LOCK_STALE_SECONDS = 3600  # Consider lock stale after 1 hour
+
+
+def _get_lock_info() -> Optional[dict]:
+    """
+    Read lock file and return its contents.
+
+    Returns:
+        Dict with 'pid', 'timestamp', 'trigger' if lock exists, None otherwise.
+    """
+    if not LOCK_FILE_PATH.exists():
+        return None
+
+    try:
+        content = LOCK_FILE_PATH.read_text().strip()
+        lines = content.split('\n')
+        info = {}
+        for line in lines:
+            if '=' in line:
+                key, value = line.split('=', 1)
+                info[key.strip()] = value.strip()
+        return info
+    except Exception as e:
+        logger.warning(f"Failed to read lock file: {e}")
+        return None
+
+
+def _is_process_running(pid: int) -> bool:
+    """Check if a process with given PID is still running."""
+    try:
+        os.kill(pid, 0)  # Signal 0 doesn't kill, just checks
+        return True
+    except OSError:
+        return False
+
+
+def _is_lock_stale(lock_info: dict) -> bool:
+    """
+    Check if lock is stale (process dead or too old).
+
+    A lock is stale if:
+    - The process that created it is no longer running
+    - The lock is older than LOCK_STALE_SECONDS
+    """
+    # Check if process is still alive
+    try:
+        pid = int(lock_info.get('pid', 0))
+        if pid > 0 and not _is_process_running(pid):
+            logger.info(f"Lock is stale: process {pid} no longer running")
+            return True
+    except (ValueError, TypeError):
+        pass
+
+    # Check if lock is too old
+    try:
+        timestamp = float(lock_info.get('timestamp', 0))
+        age = time.time() - timestamp
+        if age > LOCK_STALE_SECONDS:
+            logger.info(f"Lock is stale: {age:.0f}s old (max {LOCK_STALE_SECONDS}s)")
+            return True
+    except (ValueError, TypeError):
+        pass
+
+    return False
+
+
+def acquire_crawl_lock(trigger: str = "unknown") -> bool:
+    """
+    Try to acquire the crawl lock.
+
+    Args:
+        trigger: What triggered the crawl ('web', 'cli', 'cronjob')
+
+    Returns:
+        True if lock was acquired, False if another crawl is running.
+    """
+    # Ensure data directory exists
+    LOCK_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    # Check existing lock
+    lock_info = _get_lock_info()
+    if lock_info:
+        if _is_lock_stale(lock_info):
+            logger.info("Removing stale lock file")
+            try:
+                LOCK_FILE_PATH.unlink()
+            except Exception as e:
+                logger.warning(f"Failed to remove stale lock: {e}")
+                return False
+        else:
+            # Lock is held by another active process
+            logger.warning(
+                f"Crawl lock held by PID {lock_info.get('pid')} "
+                f"(trigger: {lock_info.get('trigger', 'unknown')})"
+            )
+            return False
+
+    # Create lock file
+    try:
+        lock_content = f"pid={os.getpid()}\ntimestamp={time.time()}\ntrigger={trigger}\n"
+        LOCK_FILE_PATH.write_text(lock_content)
+        logger.info(f"Acquired crawl lock (PID {os.getpid()}, trigger: {trigger})")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to create lock file: {e}")
+        return False
+
+
+def release_crawl_lock() -> bool:
+    """
+    Release the crawl lock.
+
+    Only releases if we own the lock (same PID).
+
+    Returns:
+        True if lock was released, False otherwise.
+    """
+    lock_info = _get_lock_info()
+    if not lock_info:
+        return True  # No lock to release
+
+    # Only release if we own the lock
+    try:
+        lock_pid = int(lock_info.get('pid', 0))
+        if lock_pid != os.getpid():
+            logger.warning(f"Cannot release lock owned by PID {lock_pid}")
+            return False
+    except (ValueError, TypeError):
+        pass
+
+    try:
+        LOCK_FILE_PATH.unlink()
+        logger.info("Released crawl lock")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to release lock: {e}")
+        return False
+
+
+def is_crawl_locked() -> bool:
+    """
+    Check if a crawl lock exists and is valid (not stale).
+
+    Returns:
+        True if a valid lock exists, False otherwise.
+    """
+    lock_info = _get_lock_info()
+    if not lock_info:
+        return False
+    return not _is_lock_stale(lock_info)
+
+
+def get_lock_holder_info() -> Optional[str]:
+    """
+    Get info about who holds the crawl lock.
+
+    Returns:
+        Human-readable string about lock holder, or None if no lock.
+    """
+    lock_info = _get_lock_info()
+    if not lock_info or _is_lock_stale(lock_info):
+        return None
+
+    pid = lock_info.get('pid', 'unknown')
+    trigger = lock_info.get('trigger', 'unknown')
+    timestamp = lock_info.get('timestamp', '')
+
+    try:
+        ts = float(timestamp)
+        age = time.time() - ts
+        age_str = f"{int(age)}s ago"
+    except (ValueError, TypeError):
+        age_str = "unknown time"
+
+    return f"PID {pid} ({trigger}, started {age_str})"
+
+
+# =============================================================================
+# Scraper Registry and Configuration
+# =============================================================================
 
 # Type alias for async scraper functions
 AsyncScraperFunc = Callable[[], Awaitable[ScraperResults]]
@@ -180,8 +370,16 @@ def get_crawl_state() -> CrawlState:
 
 
 def is_crawl_running() -> bool:
-    """Check if a crawl is currently running."""
-    return _crawl_state.is_running
+    """
+    Check if a crawl is currently running.
+
+    Checks both in-memory state (same process) and file lock (other processes).
+    """
+    # Check in-memory state first
+    if _crawl_state.is_running:
+        return True
+    # Check file lock for cross-process detection
+    return is_crawl_locked()
 
 
 def request_crawl_cancel() -> bool:
@@ -199,20 +397,32 @@ def request_crawl_cancel() -> bool:
     return False
 
 
-def prepare_crawl_state() -> bool:
+def prepare_crawl_state(trigger: str = "web") -> bool:
     """
     Prepare the crawl state before starting a background crawl.
 
-    This sets is_running=True, clears the log, and adds an initial message.
+    This acquires the file lock, sets is_running=True, clears the log,
+    and adds an initial message.
     Must be called BEFORE creating the background task to avoid race conditions.
+
+    Args:
+        trigger: What triggered the crawl ('web', 'cli', 'cronjob')
 
     Returns:
         True if state was prepared successfully,
-        False if a crawl is already running.
+        False if a crawl is already running (in this process or another).
     """
     global _crawl_state
 
+    # Check in-memory state first (same process)
     if _crawl_state.is_running:
+        logger.warning("Crawl already running in this process")
+        return False
+
+    # Try to acquire file lock (cross-process)
+    if not acquire_crawl_lock(trigger):
+        lock_holder = get_lock_holder_info()
+        logger.warning(f"Cannot start crawl - lock held by: {lock_holder}")
         return False
 
     _crawl_state.is_running = True
@@ -302,11 +512,16 @@ async def run_crawl_async(
     """
     global _crawl_state
 
-    # If state was not prepared by caller, set it up now
+    # If state was not prepared by caller, set it up now (including lock)
     if not state_prepared:
-        # Check if already running
+        # Check if already running (in-memory)
         if _crawl_state.is_running:
-            raise RuntimeError("A crawl is already running")
+            raise RuntimeError("A crawl is already running in this process")
+
+        # Try to acquire file lock (cross-process)
+        if not acquire_crawl_lock(trigger):
+            lock_holder = get_lock_holder_info()
+            raise RuntimeError(f"A crawl is already running: {lock_holder}")
 
         # Mark as running, reset cancel flag and clear log
         _crawl_state.is_running = True
@@ -493,10 +708,11 @@ async def run_crawl_async(
         raise
 
     finally:
-        # Always reset running state
+        # Always reset running state and release lock
         _crawl_state.is_running = False
         _crawl_state.cancel_requested = False
         _crawl_state.current_source = None
+        release_crawl_lock()
 
 
 def run_crawl(session: Session) -> CrawlResult:

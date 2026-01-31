@@ -82,6 +82,7 @@ from backend.services.crawler import (
     request_crawl_cancel,
     prepare_crawl_state,
     ensure_sources_exist,
+    get_lock_holder_info,
 )
 from backend.utils.logging import get_logger
 
@@ -727,12 +728,18 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
     # Check if already running
     if is_crawl_running():
         crawl_state = get_crawl_state()
-        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
+        # Get info about who holds the lock (for cross-process detection)
+        lock_holder = get_lock_holder_info()
+        if lock_holder:
+            error_msg = f"Ein Crawl läuft bereits ({lock_holder})."
+        else:
+            error_msg = "Ein Crawl läuft bereits."
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
                 "is_running": True,
                 "current_source": crawl_state.current_source,
                 "last_result": crawl_state.last_result,
                 "log_messages": get_crawl_log(),
-                "error": "Ein Crawl läuft bereits.",
+                "error": error_msg,
             }
         )
 
