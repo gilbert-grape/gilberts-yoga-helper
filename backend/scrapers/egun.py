@@ -100,9 +100,22 @@ async def scrape_egun(search_terms: Optional[List[str]] = None) -> ScraperResult
                             if not id_match:
                                 continue
                             item_id = id_match.group(1)
+
+                            # Skip if already processed, but only if link has no text
+                            # (image links have no text, title links have text)
+                            link_text = link.get_text(strip=True)
                             if item_id in processed_ids:
+                                # If this is a link with text and we haven't found a good result yet,
+                                # we might want to process it - but for now just skip
                                 continue
-                            processed_ids.add(item_id)
+
+                            # Only mark as processed if this link has actual text (title)
+                            # This ensures we don't skip the title link after seeing the image link
+                            if link_text:
+                                processed_ids.add(item_id)
+                            else:
+                                # Image link - skip and wait for title link
+                                continue
 
                             # Find parent row (usually a <tr>)
                             row = _find_parent_row(link)
