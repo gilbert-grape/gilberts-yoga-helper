@@ -359,6 +359,99 @@ sudo ufw allow from 192.168.0.0/16 to any port 8000
 sudo ufw enable
 ```
 
+## Remote Access with Tailscale
+
+Tailscale provides secure remote access to your Pi without exposing any ports to the internet. It creates a private VPN mesh network between your devices.
+
+### Why Tailscale?
+
+- **No port forwarding needed** - Works behind NAT/firewalls
+- **No DuckDNS needed** - Direct device-to-device connection
+- **Zero configuration** - Just install and login
+- **Secure by default** - WireGuard-based encryption
+- **Free for personal use** - Up to 100 devices
+
+### Installation on Raspberry Pi
+
+```bash
+# Install Tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+
+# Start Tailscale and authenticate
+sudo tailscale up
+
+# A URL will be displayed - open it in your browser to authorize the Pi
+```
+
+### Installation on Your Devices
+
+- **iPhone/Android:** Install "Tailscale" from App Store / Play Store
+- **Windows/Mac/Linux:** Download from https://tailscale.com/download
+- Login with the same account used on the Pi
+
+### Accessing the Application
+
+After setup, your Pi gets a Tailscale IP (100.x.x.x). Find it with:
+
+```bash
+tailscale ip -4
+```
+
+Access the application from anywhere:
+```
+http://100.x.x.x:8000
+```
+
+### Enable MagicDNS (Recommended)
+
+MagicDNS lets you use hostnames instead of IPs:
+
+1. Go to https://login.tailscale.com/admin/dns
+2. Enable "MagicDNS"
+3. Access your Pi using its hostname:
+   ```
+   http://pi3:8000
+   ```
+
+### Tailscale Service Management
+
+```bash
+# Check Tailscale status
+tailscale status
+
+# View your Tailscale IP
+tailscale ip -4
+
+# Disconnect temporarily
+sudo tailscale down
+
+# Reconnect
+sudo tailscale up
+
+# View connected devices
+tailscale status
+```
+
+### Tailscale on Boot
+
+Tailscale installs as a systemd service and starts automatically:
+
+```bash
+# Check service status
+sudo systemctl status tailscaled
+
+# Enable on boot (usually already enabled)
+sudo systemctl enable tailscaled
+```
+
+### Firewall Adjustment for Tailscale
+
+If you're using ufw, allow Tailscale traffic:
+
+```bash
+sudo ufw allow in on tailscale0
+```
+
 ## File Locations
 
 | Path | Description |
