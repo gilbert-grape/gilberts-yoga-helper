@@ -20,6 +20,7 @@ Exports:
     - scrape_gwmh: Scraper function for gwmh-shop.ch
     - scrape_waffenboerse: Scraper function for waffenboerse.ch
     - scrape_waffengebraucht: Scraper function for waffengebraucht.ch
+    - scrape_waffenjoray: Scraper function for waffen-joray.ch
     - scrape_waffenzimmi: Scraper function for waffenzimmi.ch
     - scrape_petitesannonces: Scraper function for petitesannonces.ch
 """
@@ -41,10 +42,12 @@ from backend.scrapers.armashop import scrape_armashop
 from backend.scrapers.gwmh import scrape_gwmh
 from backend.scrapers.waffenboerse import scrape_waffenboerse
 from backend.scrapers.waffengebraucht import scrape_waffengebraucht
+from backend.scrapers.waffenjoray import scrape_waffenjoray
 from backend.scrapers.waffenzimmi import scrape_waffenzimmi
 from backend.scrapers.petitesannonces import scrape_petitesannonces
 from backend.scrapers.renehild import scrape_renehild
 from backend.scrapers.vnsm import scrape_vnsm
+from backend.scrapers.ellie import scrape_ellie
 
 __all__ = [
     # Type definitions
@@ -68,8 +71,10 @@ __all__ = [
     "scrape_gwmh",
     "scrape_waffenboerse",
     "scrape_waffengebraucht",
+    "scrape_waffenjoray",
     "scrape_waffenzimmi",
     "scrape_petitesannonces",
     "scrape_renehild",
     "scrape_vnsm",
+    "scrape_ellie",
 ]

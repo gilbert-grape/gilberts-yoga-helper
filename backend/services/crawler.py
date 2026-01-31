@@ -32,12 +32,14 @@ from backend.scrapers import (
     scrape_aats,
     scrape_aebiwaffen,
     scrape_armashop,
+    scrape_ellie,
     scrape_gwmh,
     scrape_petitesannonces,
     scrape_renehild,
     scrape_vnsm,
     scrape_waffenboerse,
     scrape_waffengebraucht,
+    scrape_waffenjoray,
     scrape_waffenzimmi,
 )
 from backend.services.matching import find_matches
@@ -55,12 +57,14 @@ SCRAPER_REGISTRY: Dict[str, AsyncScraperFunc] = {
     "aats-group.ch": scrape_aats,
     "aebiwaffen.ch": scrape_aebiwaffen,
     "armashop.ch": scrape_armashop,
+    "ellie-firearms.com": scrape_ellie,
     "gwmh-shop.ch": scrape_gwmh,
     "petitesannonces.ch": scrape_petitesannonces,
     "renehild-tactical.ch": scrape_renehild,
     "vnsm.ch": scrape_vnsm,
     "waffenboerse.ch": scrape_waffenboerse,
     "waffengebraucht.ch": scrape_waffengebraucht,
+    "waffen-joray.ch": scrape_waffenjoray,
     "waffenzimmi.ch": scrape_waffenzimmi,
 }
 
@@ -69,12 +73,14 @@ SOURCE_BASE_URLS: Dict[str, str] = {
     "aats-group.ch": "https://aats-group.ch",
     "aebiwaffen.ch": "https://www.aebiwaffen.ch",
     "armashop.ch": "https://armashop.ch",
+    "ellie-firearms.com": "https://ellie-firearms.com",
     "gwmh-shop.ch": "https://www.gwmh-shop.ch",
     "petitesannonces.ch": "https://www.petitesannonces.ch",
     "renehild-tactical.ch": "https://renehild-tactical.ch",
     "vnsm.ch": "https://www.vnsm.ch",
     "waffenboerse.ch": "https://www.waffenboerse.ch",
     "waffengebraucht.ch": "https://waffengebraucht.ch",
+    "waffen-joray.ch": "https://waffen-joray.ch",
     "waffenzimmi.ch": "https://www.waffenzimmi.ch",
 }
 
