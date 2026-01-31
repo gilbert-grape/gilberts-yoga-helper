@@ -28,6 +28,7 @@ Logging:
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
+from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -238,7 +239,8 @@ async def dashboard(
     all_sources = get_all_sources(db)
 
     # Get selected sources from cookie (default: all sources selected)
-    selected_sources_cookie = request.cookies.get("selected_sources", "")
+    # Note: Cookie value is URL-encoded by JavaScript, so we need to decode it
+    selected_sources_cookie = unquote(request.cookies.get("selected_sources", ""))
     if selected_sources_cookie:
         selected_source_ids = set(int(s) for s in selected_sources_cookie.split(",") if s.isdigit())
     else:
