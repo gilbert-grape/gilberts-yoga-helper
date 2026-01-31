@@ -96,8 +96,8 @@ class TestDashboardRoute:
     def test_dashboard_has_title(self, client):
         """Test that dashboard has correct title."""
         response = client.get("/")
-        assert "Dashboard" in response.text
-        assert "Gebrauchtwaffen Aggregator" in response.text
+        assert "Home" in response.text
+        assert "Gilbert's Yoga Helper" in response.text
 
 
 class TestDashboardEmptyState:
@@ -269,23 +269,29 @@ class TestDashboardPerformance:
 
 
 class TestDashboardMarkAsSeen:
-    """Tests for mark_matches_as_seen behavior (Story 3.3)."""
+    """Tests for recent matches display (based on created_at date)."""
 
-    def test_matches_marked_as_seen_after_view(self, client, sample_data, db_session):
-        """Test that matches are marked as seen after viewing dashboard."""
-        # First visit - should show new badge
-        response = client.get("/")
-        assert "1 neue" in response.text
+    def test_recent_matches_shown_as_new(self, client, sample_data, db_session):
+        """Test that recent matches (< 7 days) show as new regardless of views.
 
-        # Second visit - matches should be marked as seen
-        response = client.get("/")
-        # Now there should be no new matches (all were marked as seen)
-        assert "0 neue" in response.text or "neue" not in response.text
+        Note: The NEU badge is now based on created_at < 7 days, not is_new flag.
+        This means viewing the dashboard does NOT reset the new status.
+        """
+        from datetime import datetime, timezone
 
-    def test_new_badge_shown_on_first_view(self, client, sample_data):
-        """Test that NEW badge is shown on first view of new matches."""
+        # First visit - recent matches should show
         response = client.get("/")
-        # The NEU badge should be visible
+        # All sample_data matches are created "now" so all are recent
+        assert "neue" in response.text
+
+        # Second visit - still shows as new (date-based, not view-based)
+        response = client.get("/")
+        assert "neue" in response.text
+
+    def test_new_badge_shown_for_recent_matches(self, client, sample_data):
+        """Test that NEU badge is shown for matches created within 7 days."""
+        response = client.get("/")
+        # The NEU badge should be visible for recent matches
         assert "NEU" in response.text
 
 

@@ -28,8 +28,8 @@
             </div>
             {% endif %}
 
-            {# New Badge #}
-            {% if match.is_new %}
+            {# New Badge - shown for listings < 7 days old #}
+            {% if match.is_recent %}
             <span class="new-badge absolute top-1 right-1 bg-green-500 text-white text-xs font-bold px-1 py-0.5 rounded text-[10px]">
                 NEU
             </span>

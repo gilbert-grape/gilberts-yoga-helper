@@ -269,6 +269,25 @@ async def dashboard(
         filter_cookie = request.cookies.get("filter_mode", "true")
         filter = filter_cookie.lower() != "false"
 
+    # Time filter: "all", "1d", "7d", "1m", "3m" - from URL param or cookie
+    time_filter_cookie = request.cookies.get("time_filter", "all")
+    time_filter = request.query_params.get("time_filter", time_filter_cookie)
+    if time_filter not in ("all", "1d", "7d", "1m", "3m"):
+        time_filter = "all"
+
+    # Calculate the cutoff date based on time filter
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    time_filter_days = {
+        "1d": 1,
+        "7d": 7,
+        "1m": 30,
+        "3m": 90,
+        "all": None,
+    }
+    filter_days = time_filter_days.get(time_filter)
+    recent_cutoff = now - timedelta(days=filter_days) if filter_days else None
+
     # Get all sources for the filter dropdown
     all_sources = get_all_sources(db)
 
@@ -322,7 +341,17 @@ async def dashboard(
         for m in filtered_matches:
             seen_urls.add(m.url)
 
-        new_count = sum(1 for m in matches if m.is_new)
+        # Add is_recent flag to each match (< 7 days old for badge display)
+        seven_days_ago = now - timedelta(days=7)
+        for m in matches:
+            created_utc = m.created_at.replace(tzinfo=timezone.utc) if m.created_at else None
+            m.is_recent = created_utc > seven_days_ago if created_utc else False
+
+        # Filter by time filter if not "all"
+        if recent_cutoff:
+            matches = [m for m in matches if m.created_at and m.created_at.replace(tzinfo=timezone.utc) > recent_cutoff]
+
+        new_count = sum(1 for m in matches if m.is_recent)
         groups.append({
             "term": term,
             "matches": matches,
@@ -339,6 +368,7 @@ async def dashboard(
             "total_count": total_count,
             "new_count": total_new_count,
             "filter_enabled": filter,
+            "time_filter": time_filter,
             "all_sources": all_sources,
             "selected_source_ids": selected_source_ids,
         },

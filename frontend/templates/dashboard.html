@@ -1,82 +1,75 @@
 {% extends "_base.html" %}
 
 {% block content %}
-{# Header with stats #}
-<div class="mb-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Home</h1>
-            <p class="text-gray-600">
-                {% if total_count > 0 %}
-                    {{ total_count }} Treffer gefunden
-                    {% if new_count > 0 %}
-                        <span class="inline-flex items-center ml-2 bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                            {{ new_count }} neue
-                        </span>
-                    {% endif %}
-                {% else %}
-                    Willkommen bei Gilbert's Yoga Helper
-                {% endif %}
-            </p>
-        </div>
-        <div class="flex items-center gap-4 mt-2 sm:mt-0">
-            {# Sources Filter Dropdown #}
-            <div class="relative">
-                <button id="sources-dropdown-btn" type="button" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    Quellen
-                    <span id="sources-count" class="ml-1.5 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">{{ selected_source_ids|length }}/{{ all_sources|length }}</span>
-                    <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                {# Dropdown Popup #}
-                <div id="sources-dropdown" class="hidden absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                    <div class="p-3 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-medium text-gray-700">Quellen auswählen</span>
-                            <div class="flex gap-2">
-                                <button id="sources-select-all" class="text-xs text-blue-600 hover:text-blue-800">Alle</button>
-                                <span class="text-gray-300">|</span>
-                                <button id="sources-select-none" class="text-xs text-blue-600 hover:text-blue-800">Keine</button>
-                            </div>
+{# Filter bar - compact for mobile #}
+<div class="mb-4">
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        {# Time Filter Dropdown #}
+        <select id="time-filter" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <option value="all" {% if time_filter == 'all' %}selected{% endif %}>Alle</option>
+            <option value="1d" {% if time_filter == '1d' %}selected{% endif %}>1 Tag</option>
+            <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>7 Tage</option>
+            <option value="1m" {% if time_filter == '1m' %}selected{% endif %}>1 Monat</option>
+            <option value="3m" {% if time_filter == '3m' %}selected{% endif %}>3 Monate</option>
+        </select>
+
+        {# Sources Filter Dropdown #}
+        <div class="relative">
+            <button id="sources-dropdown-btn" type="button" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span id="sources-count" class="px-1 text-xs">{{ selected_source_ids|length }}/{{ all_sources|length }}</span>
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {# Dropdown Popup #}
+            <div id="sources-dropdown" class="hidden absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div class="p-3 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700">Quellen auswählen</span>
+                        <div class="flex gap-2">
+                            <button id="sources-select-all" class="text-xs text-blue-600 hover:text-blue-800">Alle</button>
+                            <span class="text-gray-300">|</span>
+                            <button id="sources-select-none" class="text-xs text-blue-600 hover:text-blue-800">Keine</button>
                         </div>
                     </div>
-                    <div class="max-h-64 overflow-y-auto p-2">
-                        {% for source in all_sources %}
-                        <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                            <input type="checkbox" class="source-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                                   data-source-id="{{ source.id }}"
-                                   {% if source.id in selected_source_ids %}checked{% endif %}>
-                            <span class="ml-2 text-sm text-gray-700">{{ source.name }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                    <div class="p-3 border-t border-gray-200">
-                        <button id="sources-apply" class="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            Anwenden
-                        </button>
-                    </div>
+                </div>
+                <div class="max-h-64 overflow-y-auto p-2">
+                    {% for source in all_sources %}
+                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" class="source-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                               data-source-id="{{ source.id }}"
+                               {% if source.id in selected_source_ids %}checked{% endif %}>
+                        <span class="ml-2 text-sm text-gray-700">{{ source.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="p-3 border-t border-gray-200">
+                    <button id="sources-apply" class="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        Anwenden
+                    </button>
                 </div>
             </div>
-            <label class="inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="compact-checkbox" class="sr-only peer">
-                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                <span class="ms-3 text-sm font-medium text-gray-700">Kompakt</span>
-            </label>
-            <label class="inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="expanded-checkbox" class="sr-only peer">
-                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                <span class="ms-3 text-sm font-medium text-gray-700">Aufgeklappt</span>
-            </label>
-            <label class="inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="filter-checkbox" class="sr-only peer" {% if filter_enabled %}checked{% endif %}>
-                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                <span class="ms-3 text-sm font-medium text-gray-700">Filter</span>
-            </label>
         </div>
+
+        {# Toggle switches #}
+        <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="compact-checkbox" class="sr-only peer">
+            <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            <span class="ms-2 text-sm text-gray-700">Kompakt</span>
+        </label>
+        <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="expanded-checkbox" class="sr-only peer">
+            <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            <span class="ms-2 text-sm text-gray-700">Offen</span>
+        </label>
+        <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="filter-checkbox" class="sr-only peer" {% if filter_enabled %}checked{% endif %}>
+            <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            <span class="ms-2 text-sm text-gray-700">Filter</span>
+        </label>
     </div>
 </div>
 
@@ -86,6 +79,16 @@
         {% for group in groups %}
             {% include "_partials/_match_group.html" %}
         {% endfor %}
+    </div>
+
+    {# Footer with total count #}
+    <div class="mt-6 py-4 text-center text-sm text-gray-500 border-t border-gray-200">
+        {{ total_count }} Treffer
+        {% if new_count > 0 %}
+            <span class="inline-flex items-center ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
+                {{ new_count }} neue
+            </span>
+        {% endif %}
     </div>
 {% else %}
     {# Empty State - no search terms configured #}
@@ -289,6 +292,12 @@
         const filterValue = this.checked ? 'true' : 'false';
         setCookie('filter_mode', filterValue, 365);
         window.location.href = '/?filter=' + filterValue;
+    });
+
+    // Time filter dropdown - save to cookie and reload
+    document.getElementById('time-filter').addEventListener('change', function() {
+        setCookie('time_filter', this.value, 365);
+        window.location.href = '/?time_filter=' + this.value;
     });
 
     // Sources dropdown functionality
