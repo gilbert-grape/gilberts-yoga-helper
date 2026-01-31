@@ -354,6 +354,10 @@ class CrawlState:
     last_result: Optional[CrawlResult] = None
     current_source: Optional[str] = None
     log_messages: List[str] = field(default_factory=list)
+    # Progress tracking fields
+    sources_total: int = 0
+    sources_done: int = 0
+    started_at: Optional[datetime] = None
 
 
 # Global crawl state (single instance for single-user app)
@@ -551,6 +555,11 @@ async def run_crawl_async(
     result = CrawlResult()
     result.started_at = datetime.now(timezone.utc)
 
+    # Initialize progress tracking
+    _crawl_state.started_at = result.started_at
+    _crawl_state.sources_done = 0
+    _crawl_state.sources_total = 0
+
     # Create crawl log entry
     crawl_log = create_crawl_log(session, trigger=trigger)
 
@@ -578,6 +587,9 @@ async def run_crawl_async(
 
         logger.info(f"Found {len(active_sources)} active sources")
         add_crawl_log(f"{len(active_sources)} aktive Quellen gefunden")
+
+        # Set total for progress tracking
+        _crawl_state.sources_total = len(active_sources)
 
         # Collect all listings from all scrapers
         all_listings: ScraperResults = []
@@ -634,6 +646,9 @@ async def run_crawl_async(
                 source.last_error = None
                 logger.info(f"Scraped {len(listings)} listings from {source.name}")
                 add_crawl_log(f"✓ {source.name}: {len(listings)} Inserate gefunden")
+
+            # Update progress
+            _crawl_state.sources_done += 1
 
         # Commit source updates
         session.commit()

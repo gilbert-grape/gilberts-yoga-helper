@@ -73,6 +73,7 @@ from backend.database.crud import (
     update_crawl_log,
     get_crawl_logs,
     get_crawl_log_by_id,
+    get_avg_crawl_duration,
 )
 
 __all__ = [
@@ -145,4 +146,5 @@ __all__ = [
     "update_crawl_log",
     "get_crawl_logs",
     "get_crawl_log_by_id",
+    "get_avg_crawl_duration",
 ]

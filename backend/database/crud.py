@@ -1135,3 +1135,33 @@ def get_crawl_log_by_id(session: Session, crawl_log_id: int) -> Optional[CrawlLo
         CrawlLog entry or None if not found
     """
     return session.query(CrawlLog).filter(CrawlLog.id == crawl_log_id).first()
+
+
+def get_avg_crawl_duration(session: Session, limit: int = 3) -> Optional[float]:
+    """
+    Get the average duration of the last N successful crawls.
+
+    Only considers crawls with status 'success' or 'partial' (at least some sources succeeded).
+    Returns None if there are fewer than `limit` successful crawls in history.
+
+    Args:
+        session: Database session
+        limit: Number of recent successful crawls to average (default: 3)
+
+    Returns:
+        Average duration in seconds, or None if not enough history
+    """
+    successful_crawls = (
+        session.query(CrawlLog)
+        .filter(CrawlLog.status.in_(["success", "partial"]))
+        .filter(CrawlLog.duration_seconds > 0)
+        .order_by(CrawlLog.completed_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    if len(successful_crawls) < limit:
+        return None
+
+    total_duration = sum(crawl.duration_seconds for crawl in successful_crawls)
+    return total_duration / len(successful_crawls)
