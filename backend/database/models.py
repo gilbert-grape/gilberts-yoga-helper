@@ -6,6 +6,7 @@ Models:
 - Source: Scraper source websites
 - Match: Found listings matching search terms
 - AppSettings: Application-wide settings (last_seen_at for new match detection)
+- CrawlLog: History of crawl executions
 
 Naming Conventions (per Architecture):
 - Tables: plural snake_case (search_terms, sources, matches)
@@ -156,6 +157,54 @@ class AppSettings(TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<AppSettings(id={self.id}, last_seen_at={self.last_seen_at})>"
+
+
+class CrawlLog(TimestampMixin, Base):
+    """
+    Log entry for each crawl execution.
+
+    Records when crawls were run (manually or via cronjob) and their results.
+
+    Attributes:
+        started_at: When the crawl started
+        completed_at: When the crawl finished (null if still running or cancelled)
+        status: 'running', 'success', 'partial', 'failed', 'cancelled'
+        sources_attempted: Number of sources tried
+        sources_succeeded: Number of sources that worked
+        sources_failed: Number of sources that failed
+        total_listings: Total listings scraped
+        new_matches: New matches saved
+        duplicate_matches: Duplicates skipped
+        duration_seconds: How long the crawl took
+        trigger: 'manual' or 'cronjob'
+    """
+
+    __tablename__ = "crawl_logs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('running', 'success', 'partial', 'failed', 'cancelled')",
+            name="check_crawl_status_valid",
+        ),
+        CheckConstraint(
+            "trigger IN ('manual', 'cronjob')",
+            name="check_crawl_trigger_valid",
+        ),
+    )
+
+    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    completed_at = Column(DateTime, nullable=True)
+    status = Column(String(20), default="running", nullable=False)
+    sources_attempted = Column(Integer, default=0, nullable=False)
+    sources_succeeded = Column(Integer, default=0, nullable=False)
+    sources_failed = Column(Integer, default=0, nullable=False)
+    total_listings = Column(Integer, default=0, nullable=False)
+    new_matches = Column(Integer, default=0, nullable=False)
+    duplicate_matches = Column(Integer, default=0, nullable=False)
+    duration_seconds = Column(Integer, default=0, nullable=False)
+    trigger = Column(String(20), default="manual", nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<CrawlLog(id={self.id}, status='{self.status}', started_at={self.started_at})>"
 
 
 class Match(TimestampMixin, Base):

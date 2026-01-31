@@ -6,13 +6,14 @@ Provides functions for:
 - Search term queries
 - Match persistence with deduplication
 - App settings and new match detection
+- Crawl log history
 """
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
-from backend.database.models import AppSettings, ExcludeTerm, Match, SearchTerm, Source
+from backend.database.models import AppSettings, CrawlLog, ExcludeTerm, Match, SearchTerm, Source
 from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -1018,3 +1019,110 @@ def clear_all_matches(session: Session) -> int:
     session.commit()
     logger.info(f"Cleared all matches from database ({count} deleted)")
     return count
+
+
+# =============================================================================
+# Crawl Log Operations
+# =============================================================================
+
+
+def create_crawl_log(session: Session, trigger: str = "manual") -> CrawlLog:
+    """
+    Create a new crawl log entry when a crawl starts.
+
+    Args:
+        session: Database session
+        trigger: 'manual' or 'cronjob'
+
+    Returns:
+        New CrawlLog entry with status='running'
+    """
+    crawl_log = CrawlLog(
+        started_at=datetime.now(timezone.utc),
+        status="running",
+        trigger=trigger,
+    )
+    session.add(crawl_log)
+    session.commit()
+    session.refresh(crawl_log)
+    logger.info(f"Created crawl log entry (id={crawl_log.id}, trigger={trigger})")
+    return crawl_log
+
+
+def update_crawl_log(
+    session: Session,
+    crawl_log: CrawlLog,
+    status: str,
+    sources_attempted: int = 0,
+    sources_succeeded: int = 0,
+    sources_failed: int = 0,
+    total_listings: int = 0,
+    new_matches: int = 0,
+    duplicate_matches: int = 0,
+    duration_seconds: float = 0,
+) -> CrawlLog:
+    """
+    Update a crawl log entry when a crawl completes.
+
+    Args:
+        session: Database session
+        crawl_log: The CrawlLog entry to update
+        status: 'success', 'partial', 'failed', or 'cancelled'
+        sources_attempted: Number of sources tried
+        sources_succeeded: Number of sources that worked
+        sources_failed: Number of sources that failed
+        total_listings: Total listings scraped
+        new_matches: New matches saved
+        duplicate_matches: Duplicates skipped
+        duration_seconds: How long the crawl took
+
+    Returns:
+        Updated CrawlLog entry
+    """
+    crawl_log.completed_at = datetime.now(timezone.utc)
+    crawl_log.status = status
+    crawl_log.sources_attempted = sources_attempted
+    crawl_log.sources_succeeded = sources_succeeded
+    crawl_log.sources_failed = sources_failed
+    crawl_log.total_listings = total_listings
+    crawl_log.new_matches = new_matches
+    crawl_log.duplicate_matches = duplicate_matches
+    crawl_log.duration_seconds = int(duration_seconds)
+
+    session.commit()
+    session.refresh(crawl_log)
+    logger.info(f"Updated crawl log entry (id={crawl_log.id}, status={status})")
+    return crawl_log
+
+
+def get_crawl_logs(session: Session, limit: int = 50) -> List[CrawlLog]:
+    """
+    Get recent crawl log entries, newest first.
+
+    Args:
+        session: Database session
+        limit: Maximum number of entries to return
+
+    Returns:
+        List of CrawlLog entries ordered by started_at descending
+    """
+    return (
+        session.query(CrawlLog)
+        .order_by(CrawlLog.started_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def get_crawl_log_by_id(session: Session, crawl_log_id: int) -> Optional[CrawlLog]:
+    """
+    Get a specific crawl log entry by ID.
+
+    Args:
+        session: Database session
+        crawl_log_id: The crawl log ID
+
+    Returns:
+        CrawlLog entry or None if not found
+    """
+    return session.query(CrawlLog).filter(CrawlLog.id == crawl_log_id).first()

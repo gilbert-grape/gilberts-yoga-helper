@@ -68,6 +68,11 @@ from backend.database.crud import (
     get_last_seen_at,
     get_new_match_count,
     clear_all_matches,
+    # Crawl logs
+    create_crawl_log,
+    update_crawl_log,
+    get_crawl_logs,
+    get_crawl_log_by_id,
 )
 
 __all__ = [
@@ -135,4 +140,9 @@ __all__ = [
     "get_last_seen_at",
     "get_new_match_count",
     "clear_all_matches",
+    # CRUD - Crawl Logs
+    "create_crawl_log",
+    "update_crawl_log",
+    "get_crawl_logs",
+    "get_crawl_log_by_id",
 ]

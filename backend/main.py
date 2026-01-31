@@ -68,6 +68,7 @@ from backend.database import (
     create_exclude_term,
     delete_exclude_term,
     toggle_exclude_term_active,
+    get_crawl_logs,
     DATABASE_PATH,
 )
 from backend.services.crawler import (
@@ -759,18 +760,21 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/admin/crawl/status")
-async def get_crawl_status_partial(request: Request):
+async def get_crawl_status_partial(request: Request, db: Session = Depends(get_db)):
     """
     Get current crawl status partial for HTMX polling.
 
     Used for real-time status updates during crawl.
     """
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
+    crawl_logs = get_crawl_logs(db, limit=50)
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {
+            "request": request,
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
             "log_messages": get_crawl_log(),
+            "crawl_logs": crawl_logs,
         }
     )
 

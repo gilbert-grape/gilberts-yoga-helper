@@ -132,16 +132,23 @@
             <button
                 onclick="showTab('current')"
                 id="tab-current"
-                class="tab-btn w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm border-blue-500 text-blue-600"
+                class="tab-btn w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm border-blue-500 text-blue-600"
             >
                 Aktueller Status
             </button>
             <button
                 onclick="showTab('last')"
                 id="tab-last"
-                class="tab-btn w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                class="tab-btn w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             >
                 Letzter Crawl
+            </button>
+            <button
+                onclick="showTab('history')"
+                id="tab-history"
+                class="tab-btn w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            >
+                Letzte Crawls
             </button>
         </nav>
     </div>
@@ -261,6 +268,89 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Kein Crawl durchgeführt</h3>
                 <p class="mt-1 text-sm text-gray-500">
                     Klicken Sie auf "Jetzt crawlen", um den ersten Crawl zu starten.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    {# Tab Content: Letzte Crawls (History) #}
+    <div id="content-history" class="tab-content p-6 hidden">
+        {% if crawl_logs and crawl_logs|length > 0 %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum/Zeit</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auslöser</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quellen</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Treffer</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dauer</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for log in crawl_logs %}
+                        <tr class="{% if loop.index is odd %}bg-white{% else %}bg-gray-50{% endif %}">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                {{ log.started_at.strftime('%d.%m.%Y %H:%M') }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                {% if log.status == 'success' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Erfolgreich</span>
+                                {% elif log.status == 'partial' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Teilweise</span>
+                                {% elif log.status == 'running' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Läuft</span>
+                                {% elif log.status == 'cancelled' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Abgebrochen</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Fehlgeschlagen</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                {% if log.trigger == 'cronjob' %}
+                                    <span class="inline-flex items-center">
+                                        <svg class="mr-1 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Cronjob
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center">
+                                        <svg class="mr-1 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Manuell
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                <span class="text-green-600">{{ log.sources_succeeded }}</span>/<span class="{% if log.sources_failed > 0 %}text-red-600{% else %}text-gray-500{% endif %}">{{ log.sources_attempted }}</span>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                <span class="text-blue-600 font-medium">{{ log.new_matches }}</span>
+                                <span class="text-gray-400">neu</span>
+                                {% if log.duplicate_matches > 0 %}
+                                    <span class="text-gray-400 ml-1">(+{{ log.duplicate_matches }} dup)</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                {{ log.duration_seconds }}s
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Keine Crawl-Historie</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    Noch keine Crawls durchgeführt.
                 </p>
             </div>
         {% endif %}

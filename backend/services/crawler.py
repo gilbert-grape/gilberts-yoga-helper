@@ -18,11 +18,13 @@ from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from backend.database.crud import (
+    create_crawl_log,
     get_active_search_terms,
     get_active_sources,
     get_or_create_source,
     save_matches,
     search_term_to_dict,
+    update_crawl_log,
 )
 from backend.database.models import Source
 from backend.scrapers import (
@@ -252,7 +254,11 @@ async def run_single_scraper(
         return [], error_msg
 
 
-async def run_crawl_async(session: Session, state_prepared: bool = False) -> CrawlResult:
+async def run_crawl_async(
+    session: Session,
+    state_prepared: bool = False,
+    trigger: str = "manual"
+) -> CrawlResult:
     """
     Run complete crawl asynchronously: scrape all active sources, match, and save.
 
@@ -262,6 +268,7 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
         session: Database session
         state_prepared: If True, assumes prepare_crawl_state() was already called.
                        This avoids race conditions when starting crawl in background.
+        trigger: 'manual' or 'cronjob' - how the crawl was initiated
 
     Returns:
         CrawlResult with statistics about the crawl
@@ -287,6 +294,9 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
     result = CrawlResult()
     result.started_at = datetime.now(timezone.utc)
 
+    # Create crawl log entry
+    crawl_log = create_crawl_log(session, trigger=trigger)
+
     logger.info("Starting crawl run")
     add_crawl_log("Crawl gestartet")
 
@@ -302,6 +312,11 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
             result.duration_seconds = time.time() - start_time
             result.completed_at = datetime.now(timezone.utc)
             _crawl_state.last_result = result
+            # Update crawl log with failed status (no sources)
+            update_crawl_log(
+                session, crawl_log, status="failed",
+                duration_seconds=result.duration_seconds,
+            )
             return result
 
         logger.info(f"Found {len(active_sources)} active sources")
@@ -318,6 +333,17 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
                 result.completed_at = datetime.now(timezone.utc)
                 _crawl_state.last_result = result
                 _log_crawl_summary(result)
+                # Update crawl log with cancelled status
+                update_crawl_log(
+                    session, crawl_log, status="cancelled",
+                    sources_attempted=result.sources_attempted,
+                    sources_succeeded=result.sources_succeeded,
+                    sources_failed=result.sources_failed,
+                    total_listings=result.total_listings,
+                    new_matches=result.new_matches,
+                    duplicate_matches=result.duplicate_matches,
+                    duration_seconds=result.duration_seconds,
+                )
                 return result
 
             result.sources_attempted += 1
@@ -364,6 +390,15 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
             result.completed_at = datetime.now(timezone.utc)
             _crawl_state.last_result = result
             _log_crawl_summary(result)
+            # Update crawl log - partial success (scraped but no matching)
+            update_crawl_log(
+                session, crawl_log, status="partial",
+                sources_attempted=result.sources_attempted,
+                sources_succeeded=result.sources_succeeded,
+                sources_failed=result.sources_failed,
+                total_listings=result.total_listings,
+                duration_seconds=result.duration_seconds,
+            )
             return result
 
         # Convert search terms to dict format for matching
@@ -396,11 +431,41 @@ async def run_crawl_async(session: Session, state_prepared: bool = False) -> Cra
         _log_crawl_summary(result)
         add_crawl_log(f"Crawl abgeschlossen in {result.duration_seconds:.1f}s")
 
+        # Determine final status
+        if result.sources_failed > 0 and result.sources_succeeded > 0:
+            status = "partial"
+        elif result.sources_failed > 0:
+            status = "failed"
+        else:
+            status = "success"
+
+        # Update crawl log with final results
+        update_crawl_log(
+            session, crawl_log, status=status,
+            sources_attempted=result.sources_attempted,
+            sources_succeeded=result.sources_succeeded,
+            sources_failed=result.sources_failed,
+            total_listings=result.total_listings,
+            new_matches=result.new_matches,
+            duplicate_matches=result.duplicate_matches,
+            duration_seconds=result.duration_seconds,
+        )
+
         return result
 
     except Exception as e:
         logger.error(f"Crawl failed with exception: {e}")
         add_crawl_log(f"✗ FEHLER: {str(e)}")
+        # Update crawl log with failed status
+        result.duration_seconds = time.time() - start_time
+        update_crawl_log(
+            session, crawl_log, status="failed",
+            sources_attempted=result.sources_attempted,
+            sources_succeeded=result.sources_succeeded,
+            sources_failed=result.sources_failed,
+            total_listings=result.total_listings,
+            duration_seconds=result.duration_seconds,
+        )
         raise
 
     finally:
