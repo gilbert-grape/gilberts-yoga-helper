@@ -590,3 +590,122 @@ class TestRealWorldScenarios:
 
         assert len(results) == 1
         assert results[0]["listing"]["price"] is None
+
+
+class TestFoundByTermMatching:
+    """Tests for matching listings based on found_by_term field."""
+
+    def test_matches_by_found_by_term(self):
+        """Listing should match when found_by_term matches search term."""
+        listings = [
+            {
+                "title": "Radom PM-63",  # Title doesn't contain "tokarev"
+                "price": 690.0,
+                "link": "http://example.com/1",
+                "found_by_term": "tokarev"  # But was found by searching for "tokarev"
+            }
+        ]
+        terms = [
+            {"id": 1, "term": "tokarev", "match_type": "exact", "is_active": True}
+        ]
+
+        results = find_matches(listings, terms)
+
+        assert len(results) == 1
+        assert results[0]["search_term"] == "tokarev"
+        assert results[0]["match_type"] == "found_by_search"
+
+    def test_found_by_term_case_insensitive(self):
+        """found_by_term matching should be case-insensitive."""
+        listings = [
+            {
+                "title": "Some Gun",
+                "price": 500.0,
+                "link": "http://example.com/1",
+                "found_by_term": "Tokarev"  # Capital T
+            }
+        ]
+        terms = [
+            {"id": 1, "term": "tokarev", "match_type": "exact", "is_active": True}  # lowercase
+        ]
+
+        results = find_matches(listings, terms)
+
+        assert len(results) == 1
+        assert results[0]["match_type"] == "found_by_search"
+
+    def test_title_match_takes_precedence_over_found_by_term(self):
+        """When title matches, match_type should reflect title match, not found_by_search."""
+        listings = [
+            {
+                "title": "Tokarev TT-33 Pistol",  # Title contains "Tokarev"
+                "price": 500.0,
+                "link": "http://example.com/1",
+                "found_by_term": "tokarev"  # Also found by searching
+            }
+        ]
+        terms = [
+            {"id": 1, "term": "Tokarev", "match_type": "exact", "is_active": True}
+        ]
+
+        results = find_matches(listings, terms)
+
+        assert len(results) == 1
+        assert results[0]["match_type"] == "exact"  # Not "found_by_search"
+
+    def test_no_match_without_found_by_term(self):
+        """Listing without found_by_term should not match if title doesn't match."""
+        listings = [
+            {
+                "title": "Radom PM-63",  # No "tokarev" in title
+                "price": 690.0,
+                "link": "http://example.com/1"
+                # No found_by_term field
+            }
+        ]
+        terms = [
+            {"id": 1, "term": "tokarev", "match_type": "exact", "is_active": True}
+        ]
+
+        results = find_matches(listings, terms)
+
+        assert len(results) == 0
+
+    def test_found_by_term_only_matches_same_term(self):
+        """found_by_term should only match search terms with same text."""
+        listings = [
+            {
+                "title": "Some Gun",
+                "price": 500.0,
+                "link": "http://example.com/1",
+                "found_by_term": "tokarev"
+            }
+        ]
+        terms = [
+            {"id": 1, "term": "glock", "match_type": "exact", "is_active": True},  # Different term
+            {"id": 2, "term": "tokarev", "match_type": "exact", "is_active": True},  # Same term
+        ]
+
+        results = find_matches(listings, terms)
+
+        assert len(results) == 1
+        assert results[0]["search_term"] == "tokarev"
+
+    def test_found_by_term_with_exclude_terms(self):
+        """found_by_term matches should still respect exclude terms."""
+        listings = [
+            {
+                "title": "Softair Tokarev Replica",  # Contains exclude term
+                "price": 50.0,
+                "link": "http://example.com/1",
+                "found_by_term": "tokarev"
+            }
+        ]
+        terms = [
+            {"id": 1, "term": "tokarev", "match_type": "exact", "is_active": True}
+        ]
+        exclude_terms = ["Softair"]
+
+        results = find_matches(listings, terms, exclude_terms=exclude_terms)
+
+        assert len(results) == 0  # Should be excluded
