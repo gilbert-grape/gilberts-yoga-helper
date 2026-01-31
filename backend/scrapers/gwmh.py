@@ -48,7 +48,7 @@ async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResult
         Returns empty list on any error.
     """
     from backend.services.crawler import add_crawl_log
-    from urllib.parse import quote_plus
+    from urllib.parse import quote, quote_plus
 
     # If no search terms provided, get them from the database
     if search_terms is None:
@@ -101,7 +101,9 @@ async def scrape_gwmh(search_terms: Optional[List[str]] = None) -> ScraperResult
                         seen_aliases.add(alias)
 
                         # Build product detail URL using the correct epages format
-                        product_url = f"{SHOP_BASE_URL}/?ObjectPath=/Shops/64344916/Products/{alias}"
+                        # URL-encode the alias to handle special characters like # and spaces
+                        encoded_alias = quote(alias, safe='')
+                        product_url = f"{SHOP_BASE_URL}/?ObjectPath=/Shops/64344916/Products/{encoded_alias}"
 
                         try:
                             # Fetch product page to get price
