@@ -1,22 +1,9 @@
-# Cron configuration for daily crawl
-#
-# This file can be installed to /etc/cron.d/gebrauchtwaffen-crawl
-# or added to crontab with: crontab -e
-#
-# Default schedule: 06:00 daily
-#
-# Installation:
-#   sudo cp deploy/cron-daily-crawl /etc/cron.d/gebrauchtwaffen-crawl
-#   sudo chmod 644 /etc/cron.d/gebrauchtwaffen-crawl
-#
-# Or for user crontab:
-#   crontab -e
-#   # Add the following line (adjust path as needed):
-#   0 6 * * * cd /path/to/gebrauchtwaffen_aggregator && /path/to/venv/bin/python -m backend.cli crawl >> /var/log/gebrauchtwaffen-crawl.log 2>&1
+# Daily crawl for Gilbert's Gun Crawler
+# Runs every day at 06:00
+# Install: sudo cp deploy/cron-daily-crawl /etc/cron.d/gilberts-gun-crawler-crawl
 
-# Daily crawl at 06:00
-# Adjust VENV_PATH and APP_PATH according to your installation
-VENV_PATH=/home/pi/gebrauchtwaffen_aggregator/.venv
-APP_PATH=/home/pi/gebrauchtwaffen_aggregator
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-0 6 * * * pi cd $APP_PATH && $VENV_PATH/bin/python -m backend.cli crawl >> /var/log/gebrauchtwaffen-crawl.log 2>&1
+# Run crawl at 06:00 every day
+0 6 * * * pi cd /home/pi/gilberts-gun-crawler && /home/pi/.local/bin/poetry run python -m backend.cli crawl >> /var/log/gilberts-gun-crawler-crawl.log 2>&1

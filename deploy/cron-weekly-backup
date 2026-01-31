@@ -1,13 +1,9 @@
-# Cron configuration for weekly database backup
-#
-# Installation:
-#   sudo cp deploy/cron-weekly-backup /etc/cron.d/gebrauchtwaffen-backup
-#   sudo chmod 644 /etc/cron.d/gebrauchtwaffen-backup
-#
-# Default schedule: Sunday at 02:00
+# Weekly database backup for Gilbert's Gun Crawler
+# Runs every Sunday at 02:00
+# Install: sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-gun-crawler-backup
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-# Weekly backup on Sunday at 02:00
-0 2 * * 0 pi /home/pi/gebrauchtwaffen_aggregator/deploy/backup-database.sh >> /var/log/gebrauchtwaffen-backup.log 2>&1
+# Run backup at 02:00 every Sunday
+0 2 * * 0 pi /home/pi/gilberts-gun-crawler/deploy/backup-database.sh >> /var/log/gilberts-gun-crawler-backup.log 2>&1

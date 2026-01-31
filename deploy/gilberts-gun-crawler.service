@@ -1,0 +1,21 @@
+[Unit]
+Description=Gilbert's Gun Crawler - Swiss Firearms Aggregator
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/gilberts-gun-crawler
+Environment=PATH=/home/pi/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/pi/.local/bin/poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gilberts-gun-crawler
+
+[Install]
+WantedBy=multi-user.target
