@@ -48,6 +48,7 @@ from backend.scrapers.petitesannonces import scrape_petitesannonces
 from backend.scrapers.renehild import scrape_renehild
 from backend.scrapers.vnsm import scrape_vnsm
 from backend.scrapers.ellie import scrape_ellie
+from backend.scrapers.egun import scrape_egun
 
 __all__ = [
     # Type definitions
@@ -77,4 +78,5 @@ __all__ = [
     "scrape_renehild",
     "scrape_vnsm",
     "scrape_ellie",
+    "scrape_egun",
 ]
