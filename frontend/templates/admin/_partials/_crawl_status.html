@@ -384,10 +384,20 @@ function showTab(tabName) {
     var savedTab = sessionStorage.getItem('crawl-current-tab') || 'current';
     showTab(savedTab);
 
-    // Auto-scroll live log to bottom
+    // Auto-scroll live log to bottom ONLY if user is already near the bottom
     var log = document.getElementById('live-log');
     if (log) {
-        log.scrollTop = log.scrollHeight;
+        // Check if user was at or near the bottom (within 100px)
+        var wasAtBottom = sessionStorage.getItem('crawl-log-at-bottom') !== 'false';
+        if (wasAtBottom) {
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Track scroll position to detect if user scrolls away from bottom
+        log.addEventListener('scroll', function() {
+            var isAtBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 100;
+            sessionStorage.setItem('crawl-log-at-bottom', isAtBottom ? 'true' : 'false');
+        });
     }
 })();
 </script>
