@@ -239,7 +239,7 @@ class TestSchemaMatchesModels:
         inspector = inspect(migrated_db)
         columns = {col['name'] for col in inspector.get_columns('search_terms')}
 
-        expected_columns = {'id', 'created_at', 'updated_at', 'term', 'match_type', 'is_active'}
+        expected_columns = {'id', 'created_at', 'updated_at', 'term', 'match_type', 'is_active', 'sort_order', 'hide_seen_matches'}
         assert columns == expected_columns
 
     def test_sources_columns_match_model(self, migrated_db):
@@ -249,7 +249,7 @@ class TestSchemaMatchesModels:
 
         expected_columns = {
             'id', 'created_at', 'updated_at', 'name', 'base_url',
-            'is_active', 'last_crawl_at', 'last_error'
+            'is_active', 'last_crawl_at', 'last_error', 'sort_order'
         }
         assert columns == expected_columns
 

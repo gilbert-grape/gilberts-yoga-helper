@@ -1060,7 +1060,7 @@ def update_crawl_log(
     new_matches: int = 0,
     duplicate_matches: int = 0,
     duration_seconds: float = 0,
-) -> CrawlLog:
+) -> Optional[CrawlLog]:
     """
     Update a crawl log entry when a crawl completes.
 
@@ -1077,8 +1077,17 @@ def update_crawl_log(
         duration_seconds: How long the crawl took
 
     Returns:
-        Updated CrawlLog entry
+        Updated CrawlLog entry, or None if not found
     """
+    # Re-fetch the crawl_log by ID to ensure it's attached to the current session
+    # This is necessary because intermediate commits may have detached the object
+    crawl_log_id = crawl_log.id
+    crawl_log = session.query(CrawlLog).filter(CrawlLog.id == crawl_log_id).first()
+
+    if not crawl_log:
+        logger.warning(f"CrawlLog with id={crawl_log_id} not found, cannot update")
+        return None
+
     crawl_log.completed_at = datetime.now(timezone.utc)
     crawl_log.status = status
     crawl_log.sources_attempted = sources_attempted
