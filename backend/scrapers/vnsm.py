@@ -88,7 +88,7 @@ async def scrape_vnsm(search_terms: Optional[List[str]] = None) -> ScraperResult
                     response.raise_for_status()
 
                     # Parse HTML
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all product items - PrestaShop uses article.product-miniature
                     listings = soup.select("article.product-miniature")

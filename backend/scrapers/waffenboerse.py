@@ -90,7 +90,7 @@ async def scrape_waffenboerse(search_terms: Optional[List[str]] = None) -> Scrap
                     response.raise_for_status()
 
                     # Parse HTML
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all listing items
                     listings = soup.select("article.article-list-item, .article-list-item")

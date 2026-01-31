@@ -206,7 +206,7 @@ def _extract_price_from_page(html: str) -> Optional[float]:
     Returns:
         Price as float, or None if not found
     """
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "html.parser")
 
     # Try common price selectors first
     price_selectors = [

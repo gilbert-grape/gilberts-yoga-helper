@@ -56,7 +56,7 @@ async def scrape_aebiwaffen() -> ScraperResults:
                 response = await client.get(url)
                 response.raise_for_status()
 
-                soup = BeautifulSoup(response.text, "lxml")
+                soup = BeautifulSoup(response.text, "html.parser")
 
                 # Find product list - products are in <li> elements
                 # Look for the product list container first

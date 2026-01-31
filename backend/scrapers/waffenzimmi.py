@@ -89,7 +89,7 @@ async def scrape_waffenzimmi(search_terms: Optional[List[str]] = None) -> Scrape
                     response = await client.get(url)
                     response.raise_for_status()
 
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all listing items - XStore theme uses various selectors
                     listings = soup.select(

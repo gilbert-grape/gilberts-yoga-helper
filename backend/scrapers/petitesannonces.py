@@ -90,7 +90,7 @@ async def scrape_petitesannonces(search_terms: Optional[List[str]] = None) -> Sc
                     response.raise_for_status()
 
                     # Parse HTML
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all listings (both normal and premium)
                     listings = _find_listings(soup)

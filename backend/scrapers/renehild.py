@@ -60,7 +60,7 @@ async def scrape_renehild() -> ScraperResults:
                 response = await client.get(url)
                 response.raise_for_status()
 
-                soup = BeautifulSoup(response.text, "lxml")
+                soup = BeautifulSoup(response.text, "html.parser")
 
                 # Find product list - WooCommerce uses ul.products or similar
                 product_list = soup.select_one("ul.products, .products")

@@ -80,7 +80,7 @@ async def scrape_waffenjoray(search_terms: Optional[List[str]] = None) -> Scrape
                     response.raise_for_status()
 
                     # Parse HTML
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all search results
                     # Joomla search results are typically in <dl class="search-results"> or similar

@@ -88,7 +88,7 @@ async def scrape_egun(search_terms: Optional[List[str]] = None) -> ScraperResult
                     response.raise_for_status()
 
                     # Parse HTML
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all item rows - egun uses table rows for listings
                     # Look for links to item.php which indicate product rows

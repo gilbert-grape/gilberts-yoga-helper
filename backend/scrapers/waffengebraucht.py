@@ -89,7 +89,7 @@ async def scrape_waffengebraucht(search_terms: Optional[List[str]] = None) -> Sc
                     response = await client.get(url)
                     response.raise_for_status()
 
-                    soup = BeautifulSoup(response.text, "lxml")
+                    soup = BeautifulSoup(response.text, "html.parser")
 
                     # Find all listing items - site uses __Item class with __ItemById_ prefix
                     # Structure: .__ProductItemListener > .__Item.__ItemById_XXXXX
