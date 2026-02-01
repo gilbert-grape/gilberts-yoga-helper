@@ -49,14 +49,16 @@ poetry install --only main
 mkdir -p data logs data/backups
 
 # Initialize database
-poetry run alembic upgrade head
+source .venv/bin/activate
+python -m alembic upgrade head
 ```
 
 ### 3. Verify Installation
 
 ```bash
-# Test the application starts
-poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000
+# Test the application starts (ensure venv is activated)
+source .venv/bin/activate
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 # Open browser to http://<pi-ip>:8000
 # Press Ctrl+C to stop
@@ -129,7 +131,8 @@ crontab -e
 ```bash
 # Run crawl manually
 cd ~/gilberts-gun-crawler
-poetry run python -m backend.cli crawl
+source .venv/bin/activate
+python -m backend.cli crawl
 ```
 
 ### 6. Configure Database Backups
@@ -267,7 +270,8 @@ ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
 2. Run migrations:
    ```bash
    cd ~/gilberts-gun-crawler
-   poetry run alembic upgrade head
+   source .venv/bin/activate
+   python -m alembic upgrade head
    ```
 
 3. Check database integrity:
@@ -309,7 +313,8 @@ If `poetry install` fails with "Please make sure the libxml2 and libxslt develop
 3. Test crawl manually:
    ```bash
    cd ~/gilberts-gun-crawler
-   poetry run python -m backend.cli crawl
+   source .venv/bin/activate
+   python -m backend.cli crawl
    ```
 
 ### Permission Errors
@@ -337,7 +342,8 @@ If `poetry install` fails with "Please make sure the libxml2 and libxslt develop
 2. Test scraper manually:
    ```bash
    cd ~/gilberts-gun-crawler
-   poetry run python -c "from backend.scrapers import scrape_waffenboerse; import asyncio; print(asyncio.run(scrape_waffenboerse())[:2])"
+   source .venv/bin/activate
+   python -c "from backend.scrapers import scrape_waffenboerse; import asyncio; print(asyncio.run(scrape_waffenboerse())[:2])"
    ```
 
 ## Updating

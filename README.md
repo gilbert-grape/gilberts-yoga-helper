@@ -104,23 +104,26 @@ For full Raspberry Pi production setup with systemd service, automatic daily cra
 ### Initialize Database
 
 ```bash
-poetry run alembic upgrade head
+python -m alembic upgrade head
 ```
 
 ### Start the Application
 
 ```bash
 # Development mode (with auto-reload)
-poetry run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Production mode
-poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-**Windows note:** If `poetry run` doesn't work, activate the virtual environment first:
-```powershell
-poetry shell
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+**Note:** Make sure the virtual environment is activated first:
+```bash
+# Linux/macOS/Raspberry Pi
+source .venv/bin/activate
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
 ```
 
 Open your browser to **http://localhost:8000**
@@ -141,23 +144,23 @@ The main page shows all matches grouped by search term. New matches (since your 
 
 ```bash
 # Run a crawl from command line (useful for cron)
-poetry run python -m backend.cli crawl
+python -m backend.cli crawl
 
 # Show help
-poetry run python -m backend.cli --help
+python -m backend.cli --help
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-poetry run pytest
+pytest
 
 # Run with coverage
-poetry run pytest --cov=backend
+pytest --cov=backend
 
 # Run specific test file
-poetry run pytest tests/test_scrapers.py
+pytest tests/test_scrapers.py
 ```
 
 ## Project Structure
@@ -229,15 +232,17 @@ cd gilberts-gun-crawler
 # 1. Pull latest code
 git pull
 
-# 2. Update dependencies (Poetry or pip)
-poetry install
-# oder: pip install -r requirements.txt
+# 2. Activate virtual environment
+.venv\Scripts\Activate.ps1
 
-# 3. Run database migrations
-poetry run alembic upgrade head
-# oder: python -m alembic upgrade head
+# 3. Update dependencies
+pip install -r requirements.txt
 
-# 4. Restart application
+# 4. Run database migrations
+python -m alembic upgrade head
+
+# 5. Restart application
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Troubleshooting Upgrades
@@ -246,19 +251,19 @@ poetry run alembic upgrade head
 ```bash
 git checkout -- poetry.lock
 git pull
-poetry install
+pip install -r requirements.txt
 ```
 
 **Migration fails:**
 ```bash
 # Check current migration status
-poetry run alembic current
+python -m alembic current
 
 # View pending migrations
-poetry run alembic history
+python -m alembic history
 
 # Force upgrade to latest
-poetry run alembic upgrade head
+python -m alembic upgrade head
 ```
 
 **Rollback to previous version:**
@@ -269,7 +274,7 @@ cp data/gebrauchtwaffen_backup_YYYYMMDD.db data/gebrauchtwaffen.db
 # Checkout previous version
 git log --oneline -5  # find previous commit
 git checkout <commit-hash>
-poetry install
+pip install -r requirements.txt
 ```
 
 ## Production Deployment
