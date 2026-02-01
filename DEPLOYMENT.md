@@ -383,6 +383,131 @@ python -m alembic upgrade head
 sudo systemctl start gilberts-yoga-helper
 ```
 
+## Telegram Notifications
+
+Get notified via Telegram when new matches are found after a crawl.
+
+### Setup Telegram Bot
+
+1. **Create a bot with BotFather:**
+   - Open Telegram and search for `@BotFather`
+   - Send `/newbot` and follow the prompts
+   - Copy the bot token (looks like `123456789:ABCdefGHI...`)
+
+2. **Get your Chat ID:**
+   - Send any message to your new bot
+   - Open in browser: `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`
+   - Find `"chat":{"id":123456789}` in the response - that's your Chat ID
+
+3. **Configure on Pi:**
+   ```bash
+   cd ~/gilberts-yoga-helper
+   nano .env
+   ```
+
+   Add these lines:
+   ```
+   TELEGRAM_BOT_TOKEN=123456789:ABCdefGHI...
+   TELEGRAM_CHAT_ID=123456789
+   ```
+
+4. **Restart application:**
+   ```bash
+   sudo systemctl restart gilberts-yoga-helper
+   ```
+
+5. **Test notification:**
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/notifications/test
+   ```
+
+### Notification Format
+
+After each crawl with new matches, you'll receive a message like:
+
+```
+**5 neue Treffer gefunden!**
+Crawl-Dauer: 2m 30s
+
+• SIG 550 - CHF 1'200 [waffenboerse.ch]
+• CZ 75 B - CHF 800 [egun.de]
+• Makarov PM - CHF 450 [waffengebraucht.ch]
+...
+```
+
+## REST API
+
+The application provides a REST API for programmatic access.
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/matches` | List all matches with filters |
+| GET | `/api/v1/matches/new` | Get new unseen matches |
+| GET | `/api/v1/sources` | List all sources |
+| GET | `/api/v1/search-terms` | List all search terms |
+| POST | `/api/v1/notifications/test` | Send test Telegram notification |
+
+### Examples
+
+**Get all matches:**
+```bash
+curl http://localhost:8000/api/v1/matches
+```
+
+**Get matches with filters:**
+```bash
+# Filter by source
+curl "http://localhost:8000/api/v1/matches?source_id=1&limit=10"
+
+# Only favorites
+curl "http://localhost:8000/api/v1/matches?favorites_only=true"
+```
+
+**Get new matches:**
+```bash
+curl http://localhost:8000/api/v1/matches/new
+```
+
+**Get sources:**
+```bash
+curl http://localhost:8000/api/v1/sources
+```
+
+**Get search terms:**
+```bash
+curl http://localhost:8000/api/v1/search-terms
+```
+
+### Response Format
+
+All endpoints return JSON. Example response for `/api/v1/matches`:
+
+```json
+{
+  "total": 150,
+  "limit": 100,
+  "offset": 0,
+  "matches": [
+    {
+      "id": 1,
+      "title": "SIG 550",
+      "price": "CHF 1'200",
+      "url": "https://...",
+      "image_url": "https://...",
+      "is_favorite": false,
+      "is_new": true,
+      "source_id": 1,
+      "source_name": "waffenboerse.ch",
+      "search_term_id": 1,
+      "search_term": "SIG",
+      "created_at": "2026-02-01T10:30:00"
+    }
+  ]
+}
+```
+
 ## Security Notes
 
 - The application is designed for local network use only
