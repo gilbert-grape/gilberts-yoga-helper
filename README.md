@@ -192,6 +192,83 @@ Environment variables (can be set in `.env` file):
 | `LOG_FILE` | logs/app.log | Log file path |
 | `DATABASE_URL` | sqlite:///data/gebrauchtwaffen.db | Database connection |
 
+## Upgrading
+
+When a new version is released, follow these steps to upgrade:
+
+### Quick Upgrade (Raspberry Pi / Linux)
+
+```bash
+cd ~/gilberts-gun-crawler
+
+# 1. Backup database (recommended)
+cp data/gebrauchtwaffen.db data/gebrauchtwaffen_backup_$(date +%Y%m%d).db
+
+# 2. Stop service (if running as systemd service)
+sudo systemctl stop gilberts-gun-crawler
+
+# 3. Pull latest code
+git pull
+
+# 4. Update dependencies
+poetry install --only main
+
+# 5. Run database migrations
+poetry run alembic upgrade head
+
+# 6. Restart service
+sudo systemctl start gilberts-gun-crawler
+```
+
+### Windows / Development
+
+```powershell
+cd gilberts-gun-crawler
+
+# 1. Pull latest code
+git pull
+
+# 2. Update dependencies
+poetry install
+
+# 3. Run database migrations
+poetry run alembic upgrade head
+
+# 4. Restart application
+```
+
+### Troubleshooting Upgrades
+
+**Git pull fails (poetry.lock conflict):**
+```bash
+git checkout -- poetry.lock
+git pull
+poetry install
+```
+
+**Migration fails:**
+```bash
+# Check current migration status
+poetry run alembic current
+
+# View pending migrations
+poetry run alembic history
+
+# Force upgrade to latest
+poetry run alembic upgrade head
+```
+
+**Rollback to previous version:**
+```bash
+# Restore database backup
+cp data/gebrauchtwaffen_backup_YYYYMMDD.db data/gebrauchtwaffen.db
+
+# Checkout previous version
+git log --oneline -5  # find previous commit
+git checkout <commit-hash>
+poetry install
+```
+
 ## Production Deployment
 
 For deploying to a Raspberry Pi with systemd, cron jobs, and backups, see [DEPLOYMENT.md](DEPLOYMENT.md).
