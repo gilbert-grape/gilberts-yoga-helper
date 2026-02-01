@@ -52,7 +52,7 @@ class TestDashboardTemplate:
     def test_dashboard_has_navigation(self, client):
         """Dashboard should have navigation links."""
         response = client.get("/")
-        assert "Dashboard" in response.text
+        assert "Home" in response.text
         assert "Suchbegriffe" in response.text
         assert "Quellen" in response.text
 
@@ -93,7 +93,7 @@ class TestAdminTemplates:
         for url in ["/admin/search-terms", "/admin/sources", "/admin/crawl"]:
             response = client.get(url)
             # Should have navigation from base template
-            assert "Dashboard" in response.text
+            assert "Home" in response.text
             # Should have TailwindCSS from base template
             assert "tailwindcss" in response.text.lower()
 
