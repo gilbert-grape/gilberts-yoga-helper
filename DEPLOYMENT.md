@@ -348,26 +348,38 @@ If `pip install` fails with dependency errors:
 
 ## Updating
 
-### Update Application
+### Quick Update (Recommended)
+
+Use the update script for one-command updates:
 
 ```bash
-# Stop service
-sudo systemctl stop gilberts-gun-crawler
+# First time only: make script executable
+chmod +x ~/gilberts-gun-crawler/deploy/update.sh
 
-# Pull latest code
+# Run update
+~/gilberts-gun-crawler/deploy/update.sh
+```
+
+The script automatically:
+1. Stops the service
+2. Pulls latest code
+3. Updates the systemd service file
+4. Runs database migrations
+5. Starts the service
+6. Shows status
+
+### Manual Update
+
+If you prefer manual steps:
+
+```bash
+sudo systemctl stop gilberts-gun-crawler
 cd ~/gilberts-gun-crawler
 git pull
-
-# Activate virtual environment
+sudo cp deploy/gilberts-gun-crawler.service /etc/systemd/system/
+sudo systemctl daemon-reload
 source .venv/bin/activate
-
-# Update dependencies
-pip install -r requirements.txt
-
-# Run migrations
 python -m alembic upgrade head
-
-# Restart service
 sudo systemctl start gilberts-gun-crawler
 ```
 
