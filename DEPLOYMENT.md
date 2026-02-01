@@ -28,10 +28,6 @@ sudo apt install -y python3 python3-pip python3-venv git sqlite3
 # Install build dependencies for lxml (required for HTML parsing)
 sudo apt install -y libxml2-dev libxslt-dev
 
-# Install Poetry (Python dependency manager)
-curl -sSL https://install.python-poetry.org | python3 -
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
 ```
 
 ### 2. Clone and Setup Application
@@ -42,14 +38,17 @@ cd ~
 git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git gilberts-gun-crawler
 cd gilberts-gun-crawler
 
-# Create virtual environment and install dependencies
-poetry install --only main
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install fastapi uvicorn jinja2 httpx beautifulsoup4 sqlalchemy alembic python-dotenv python-multipart typing_extensions
 
 # Create required directories
 mkdir -p data logs data/backups
 
 # Initialize database
-source .venv/bin/activate
 python -m alembic upgrade head
 ```
 
@@ -58,7 +57,7 @@ python -m alembic upgrade head
 ```bash
 # Test the application starts (ensure venv is activated)
 source .venv/bin/activate
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 # Open browser to http://<pi-ip>:8000
 # Press Ctrl+C to stop
@@ -257,7 +256,8 @@ ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
 3. Test manually:
    ```bash
    cd ~/gilberts-gun-crawler
-   poetry run uvicorn backend.main:app --host 0.0.0.0 --port 8000
+   source .venv/bin/activate
+   python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
    ```
 
 ### Database Issues
@@ -279,23 +279,23 @@ ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
    sqlite3 data/gilberts-gun-crawler.db "PRAGMA integrity_check;"
    ```
 
-### Poetry/lxml Installation Fails
+### Pip Installation Fails
 
-If `poetry install` fails with "Please make sure the libxml2 and libxslt development packages are installed":
+If `pip install` fails with dependency errors:
 
-1. Install system dependencies:
+1. Ensure venv is activated:
    ```bash
-   sudo apt-get update && sudo apt-get install -y libxml2-dev libxslt-dev
+   source .venv/bin/activate
    ```
 
-2. Clear the broken virtualenv cache:
+2. Update pip:
    ```bash
-   rm -rf ~/.cache/pypoetry/virtualenvs/gilberts-*
+   pip install --upgrade pip
    ```
 
 3. Retry installation:
    ```bash
-   poetry install --only main
+   pip install fastapi uvicorn jinja2 httpx beautifulsoup4 sqlalchemy alembic python-dotenv python-multipart typing_extensions
    ```
 
 ### Crawl Not Running
