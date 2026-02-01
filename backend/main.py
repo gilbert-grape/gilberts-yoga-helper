@@ -275,6 +275,11 @@ async def dashboard(
     if time_filter not in ("all", "1d", "7d", "1m", "3m"):
         time_filter = "all"
 
+    # Favorites filter: URL param > cookie > default (False)
+    favorites_only_cookie = request.cookies.get("favorites_only", "false")
+    favorites_only_param = request.query_params.get("favorites_only", favorites_only_cookie)
+    favorites_only = favorites_only_param.lower() == "true"
+
     # Calculate the cutoff date based on time filter
     from datetime import datetime, timezone, timedelta
     now = datetime.now(timezone.utc)
@@ -351,6 +356,10 @@ async def dashboard(
         if recent_cutoff:
             matches = [m for m in matches if m.created_at and m.created_at.replace(tzinfo=timezone.utc) > recent_cutoff]
 
+        # Filter by favorites only if enabled
+        if favorites_only:
+            matches = [m for m in matches if m.is_favorite]
+
         new_count = sum(1 for m in matches if m.is_recent)
         groups.append({
             "term": term,
@@ -369,6 +378,7 @@ async def dashboard(
             "new_count": total_new_count,
             "filter_enabled": filter,
             "time_filter": time_filter,
+            "favorites_only": favorites_only,
             "all_sources": all_sources,
             "selected_source_ids": selected_source_ids,
         },
@@ -385,6 +395,23 @@ async def dashboard(
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@app.post("/api/toggle-favorite/{match_id}")
+async def toggle_favorite(match_id: int, db: Session = Depends(get_db)):
+    """
+    Toggle the favorite status of a match.
+
+    Returns JSON with the new favorite status.
+    """
+    from backend.database.crud import toggle_favorite as db_toggle_favorite
+
+    new_status = db_toggle_favorite(db, match_id)
+    if new_status is None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    return {"match_id": match_id, "is_favorite": new_status}
 
 
 @app.get("/admin/search-terms")

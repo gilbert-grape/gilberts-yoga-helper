@@ -70,6 +70,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
         </button>
+        <button id="favorites-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors {% if favorites_only %}bg-yellow-100 border-yellow-400{% endif %}" title="Nur Favoriten">
+            <svg class="w-5 h-5 {% if favorites_only %}text-yellow-500{% else %}text-gray-500{% endif %}" fill="{% if favorites_only %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+        </button>
 
         {# Desktop: Toggle switches with labels #}
         <label class="hidden sm:inline-flex items-center cursor-pointer">
@@ -86,6 +91,11 @@
             <input type="checkbox" id="filter-checkbox" class="sr-only peer" {% if filter_enabled %}checked{% endif %}>
             <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             <span class="ms-2 text-sm text-gray-700">Filter</span>
+        </label>
+        <label class="hidden sm:inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="favorites-checkbox" class="sr-only peer" {% if favorites_only %}checked{% endif %}>
+            <div class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-400"></div>
+            <span class="ms-2 text-sm text-gray-700">Favoriten</span>
         </label>
     </div>
 </div>
@@ -359,6 +369,27 @@
         setFilterMode(!isCurrentlyEnabled);
     });
 
+    // Favorites mode
+    const favoritesCheckbox = document.getElementById('favorites-checkbox');
+    const favoritesBtnMobile = document.getElementById('favorites-btn-mobile');
+
+    function setFavoritesMode(enabled) {
+        setCookie('favorites_only', enabled ? 'true' : 'false', 365);
+        window.location.href = '/?favorites_only=' + (enabled ? 'true' : 'false');
+    }
+
+    if (favoritesCheckbox) {
+        favoritesCheckbox.addEventListener('change', function() {
+            setFavoritesMode(this.checked);
+        });
+    }
+    if (favoritesBtnMobile) {
+        favoritesBtnMobile.addEventListener('click', function() {
+            const isCurrentlyEnabled = this.classList.contains('bg-yellow-100');
+            setFavoritesMode(!isCurrentlyEnabled);
+        });
+    }
+
     // Time filter dropdown - save to cookie and reload
     document.getElementById('time-filter').addEventListener('change', function() {
         setCookie('time_filter', this.value, 365);
@@ -525,5 +556,34 @@
             observer.observe(container);
         });
     })();
+
+    // Toggle favorite status for a match
+    function toggleFavorite(button) {
+        const matchId = button.dataset.matchId;
+        const isFavorite = button.dataset.isFavorite === 'true';
+
+        fetch('/api/toggle-favorite/' + matchId, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                const newIsFavorite = data.is_favorite;
+                button.dataset.isFavorite = newIsFavorite ? 'true' : 'false';
+
+                const svg = button.querySelector('svg');
+                if (newIsFavorite) {
+                    svg.classList.remove('text-gray-400');
+                    svg.classList.add('text-yellow-400');
+                    svg.setAttribute('fill', 'currentColor');
+                    button.title = 'Aus Favoriten entfernen';
+                } else {
+                    svg.classList.remove('text-yellow-400');
+                    svg.classList.add('text-gray-400');
+                    svg.setAttribute('fill', 'none');
+                    button.title = 'Zu Favoriten hinzufügen';
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling favorite:', error);
+            });
+    }
 </script>
 {% endblock %}

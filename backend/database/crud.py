@@ -1206,3 +1206,57 @@ def get_avg_crawl_duration(session: Session, limit: int = 3) -> Optional[float]:
 
     total_duration = sum(crawl.duration_seconds for crawl in successful_crawls)
     return total_duration / len(successful_crawls)
+
+
+# =============================================================================
+# Favorites Operations
+# =============================================================================
+
+
+def toggle_favorite(session: Session, match_id: int) -> Optional[bool]:
+    """
+    Toggle the favorite status of a match.
+
+    Args:
+        session: Database session
+        match_id: Match ID to toggle
+
+    Returns:
+        New favorite status (True/False), or None if match not found
+    """
+    match = session.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        return None
+
+    match.is_favorite = not match.is_favorite
+    session.commit()
+    logger.info(f"Toggled favorite for match {match_id}: {match.is_favorite}")
+    return match.is_favorite
+
+
+def get_favorite_matches(session: Session) -> List[Match]:
+    """
+    Get all favorite matches.
+
+    Args:
+        session: Database session
+
+    Returns:
+        List of Match records where is_favorite=True
+    """
+    return session.query(Match).filter(
+        Match.is_favorite == True
+    ).order_by(Match.created_at.desc()).all()
+
+
+def get_favorite_count(session: Session) -> int:
+    """
+    Get count of favorite matches.
+
+    Args:
+        session: Database session
+
+    Returns:
+        Number of matches where is_favorite=True
+    """
+    return session.query(Match).filter(Match.is_favorite == True).count()

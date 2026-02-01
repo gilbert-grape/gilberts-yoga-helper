@@ -238,6 +238,7 @@ class Match(TimestampMixin, Base):
     url = Column(String(1000), nullable=False)
     image_url = Column(String(1000), nullable=True)
     is_new = Column(Boolean, default=True, nullable=False)
+    is_favorite = Column(Boolean, default=False, nullable=False, index=True)
     external_id = Column(String(100), nullable=True, index=True)
 
     # Relationships
