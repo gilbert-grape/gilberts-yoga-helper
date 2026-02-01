@@ -352,15 +352,14 @@ sudo systemctl stop gilberts-gun-crawler
 cd ~/gilberts-gun-crawler
 git pull
 
-# If git pull fails due to poetry.lock conflict:
-git checkout -- poetry.lock
-git pull
+# Activate virtual environment
+source .venv/bin/activate
 
 # Update dependencies
-poetry install --only main
+pip install -r requirements.txt
 
 # Run migrations
-poetry run alembic upgrade head
+python -m alembic upgrade head
 
 # Restart service
 sudo systemctl start gilberts-gun-crawler

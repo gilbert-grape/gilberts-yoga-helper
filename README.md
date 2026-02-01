@@ -210,11 +210,12 @@ sudo systemctl stop gilberts-gun-crawler
 # 3. Pull latest code
 git pull
 
-# 4. Update dependencies
-poetry install --only main
+# 4. Activate virtual environment and update dependencies
+source .venv/bin/activate
+pip install -r requirements.txt
 
 # 5. Run database migrations
-poetry run alembic upgrade head
+python -m alembic upgrade head
 
 # 6. Restart service
 sudo systemctl start gilberts-gun-crawler
@@ -228,11 +229,13 @@ cd gilberts-gun-crawler
 # 1. Pull latest code
 git pull
 
-# 2. Update dependencies
+# 2. Update dependencies (Poetry or pip)
 poetry install
+# oder: pip install -r requirements.txt
 
 # 3. Run database migrations
 poetry run alembic upgrade head
+# oder: python -m alembic upgrade head
 
 # 4. Restart application
 ```
