@@ -1,0 +1,15 @@
+# Main dependencies (generated from pyproject.toml)
+# For production use: pip install -r requirements.txt
+
+fastapi>=0.68.0,<0.100.0
+pydantic>=1.10.0,<2.0.0
+uvicorn>=0.20.0
+sqlalchemy>=1.4.0,<2.0.0
+jinja2>=3.1.0
+python-dotenv>=0.21.0
+httpx>=0.23.0
+alembic>=1.9.0
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+python-multipart>=0.0.5
+typing_extensions>=4.0.0
