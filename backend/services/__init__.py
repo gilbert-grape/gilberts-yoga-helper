@@ -1,7 +1,7 @@
 """
 Services Package
 
-Business logic services for Gebrauchtwaffen Aggregator.
+Business logic services for Gilbert's Yoga Helper.
 
 Exports:
     - MatchResult: TypedDict for match results

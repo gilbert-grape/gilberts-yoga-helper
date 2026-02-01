@@ -34,13 +34,13 @@ class TestDatabasePath:
         assert DATABASE_PATH.parent.name == "data"
 
     def test_database_filename_correct(self):
-        """Database filename should be gebrauchtwaffen.db."""
-        assert DATABASE_PATH.name == "gebrauchtwaffen.db"
+        """Database filename should be yoga_helper.db."""
+        assert DATABASE_PATH.name == "yoga_helper.db"
 
     def test_database_url_format(self):
         """DATABASE_URL should be a valid SQLite URL."""
         assert DATABASE_URL.startswith("sqlite:///")
-        assert "gebrauchtwaffen.db" in DATABASE_URL
+        assert "yoga_helper.db" in DATABASE_URL
 
 
 class TestWALMode:

@@ -1,5 +1,5 @@
 """
-Pytest configuration and fixtures for Gebrauchtwaffen Aggregator tests.
+Pytest configuration and fixtures for Gilbert's Yoga Helper tests.
 """
 import os
 import tempfile

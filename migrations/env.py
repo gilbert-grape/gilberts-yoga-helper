@@ -1,7 +1,7 @@
 """
 Alembic migration environment configuration.
 
-This file configures Alembic to work with the Gebrauchtwaffen Aggregator
+This file configures Alembic to work with the Gilbert's Yoga Helper
 SQLAlchemy models and SQLite database with WAL mode.
 """
 from logging.config import fileConfig
@@ -25,7 +25,7 @@ config = context.config
 # Use DATABASE_URL from connection.py as fallback, but allow override from command line
 # This enables tests to use a different database while normal usage uses the app's database
 current_url = config.get_main_option("sqlalchemy.url")
-if not current_url or current_url == "sqlite:///data/gebrauchtwaffen.db":
+if not current_url or current_url == "sqlite:///data/yoga_helper.db":
     # Use the application's DATABASE_URL if no override is provided
     # or if it matches the default from alembic.ini
     config.set_main_option("sqlalchemy.url", DATABASE_URL)

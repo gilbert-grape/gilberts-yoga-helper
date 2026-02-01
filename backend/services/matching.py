@@ -1,5 +1,5 @@
 """
-Matching Logic for Gebrauchtwaffen Aggregator
+Matching Logic for Gilbert's Yoga Helper
 
 Provides functions to match scraped listings against user search terms.
 Supports two matching modes:

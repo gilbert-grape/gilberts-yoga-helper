@@ -1,5 +1,5 @@
 """
-CLI commands for Gebrauchtwaffen Aggregator.
+CLI commands for Gilbert's Yoga Helper.
 
 Provides command-line interface for:
 - Running crawls (for cron jobs)
@@ -96,8 +96,8 @@ def cmd_crawl(args: argparse.Namespace) -> int:
 def main() -> int:
     """Main entry point for CLI."""
     parser = argparse.ArgumentParser(
-        prog="gebrauchtwaffen",
-        description="Gebrauchtwaffen Aggregator CLI"
+        prog="yoga-helper",
+        description="Gilbert's Yoga Helper CLI"
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

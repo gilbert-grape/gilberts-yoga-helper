@@ -21,12 +21,12 @@ class TestSystemdService:
 
     def test_service_file_exists(self):
         """Test that systemd service file exists."""
-        service_file = PROJECT_ROOT / "deploy" / "gebrauchtwaffen.service"
+        service_file = PROJECT_ROOT / "deploy" / "yoga-helper.service"
         assert service_file.exists(), "Systemd service file should exist"
 
     def test_service_file_has_required_sections(self):
         """Test that service file has required systemd sections."""
-        service_file = PROJECT_ROOT / "deploy" / "gebrauchtwaffen.service"
+        service_file = PROJECT_ROOT / "deploy" / "yoga-helper.service"
         content = service_file.read_text()
 
         assert "[Unit]" in content, "Should have [Unit] section"
@@ -35,14 +35,14 @@ class TestSystemdService:
 
     def test_service_has_restart_policy(self):
         """Test that service has restart configuration."""
-        service_file = PROJECT_ROOT / "deploy" / "gebrauchtwaffen.service"
+        service_file = PROJECT_ROOT / "deploy" / "yoga-helper.service"
         content = service_file.read_text()
 
         assert "Restart=" in content, "Should have Restart directive"
 
     def test_service_has_exec_start(self):
         """Test that service has ExecStart configuration."""
-        service_file = PROJECT_ROOT / "deploy" / "gebrauchtwaffen.service"
+        service_file = PROJECT_ROOT / "deploy" / "yoga-helper.service"
         content = service_file.read_text()
 
         assert "ExecStart=" in content, "Should have ExecStart directive"
@@ -50,7 +50,7 @@ class TestSystemdService:
 
     def test_service_has_journald_env(self):
         """Test that service has USE_JOURNALD environment variable."""
-        service_file = PROJECT_ROOT / "deploy" / "gebrauchtwaffen.service"
+        service_file = PROJECT_ROOT / "deploy" / "yoga-helper.service"
         content = service_file.read_text()
 
         assert "USE_JOURNALD=true" in content, "Should enable journald logging"
@@ -210,7 +210,7 @@ class TestDeployDirectory:
         deploy_dir = PROJECT_ROOT / "deploy"
 
         expected_files = [
-            "gebrauchtwaffen.service",
+            "yoga-helper.service",
             "cron-daily-crawl",
             "cron-weekly-backup",
             "backup-database.sh",

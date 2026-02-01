@@ -166,7 +166,7 @@ pytest tests/test_scrapers.py
 ## Project Structure
 
 ```
-gebrauchtwaffen_aggregator/
+gilberts-yoga-helper/
 ├── backend/           # FastAPI application
 │   ├── database/      # SQLAlchemy models and CRUD
 │   ├── scrapers/      # Web scrapers per source
@@ -205,7 +205,7 @@ When a new version is released, follow these steps to upgrade:
 cd ~/gilberts-yoga-helper
 
 # 1. Backup database (recommended)
-cp data/gebrauchtwaffen.db data/gebrauchtwaffen_backup_$(date +%Y%m%d).db
+cp data/yoga_helper.db data/yoga_helper_backup_$(date +%Y%m%d).db
 
 # 2. Stop service (if running as systemd service)
 sudo systemctl stop gilberts-yoga-helper
@@ -269,7 +269,7 @@ python -m alembic upgrade head
 **Rollback to previous version:**
 ```bash
 # Restore database backup
-cp data/gebrauchtwaffen_backup_YYYYMMDD.db data/gebrauchtwaffen.db
+cp data/yoga_helper_backup_YYYYMMDD.db data/yoga_helper.db
 
 # Checkout previous version
 git log --oneline -5  # find previous commit

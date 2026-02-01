@@ -1,4 +1,4 @@
-"""Initial schema for Gebrauchtwaffen Aggregator.
+"""Initial schema for Gilbert's Yoga Helper.
 
 Creates all tables: search_terms, sources, matches
 

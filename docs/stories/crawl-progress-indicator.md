@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-**Als** Benutzer des Gebrauchtwaffen Aggregators
+**Als** Benutzer des Gilbert's Yoga Helpers
 **möchte ich** während eines Crawls sehen, wie weit der Fortschritt ist und wie lange es noch dauert
 **damit** ich weiß, ob ich warten soll oder später wiederkommen kann
 

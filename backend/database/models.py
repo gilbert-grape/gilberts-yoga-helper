@@ -1,5 +1,5 @@
 """
-SQLAlchemy ORM models for Gebrauchtwaffen Aggregator.
+SQLAlchemy ORM models for Gilbert's Yoga Helper.
 
 Models:
 - SearchTerm: User's search terms with match type (exact/similar)

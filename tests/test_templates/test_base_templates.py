@@ -59,7 +59,7 @@ class TestDashboardTemplate:
     def test_dashboard_has_proper_title(self, client):
         """Dashboard should have proper title."""
         response = client.get("/")
-        assert "Gebrauchtwaffen Aggregator" in response.text
+        assert "Gilbert's Yoga Helper" in response.text
 
     def test_dashboard_has_lang_attribute(self, client):
         """Dashboard should have German language attribute."""

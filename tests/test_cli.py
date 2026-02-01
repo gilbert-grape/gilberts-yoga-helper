@@ -140,13 +140,13 @@ class TestCLICrawlCommand:
 class TestCLIMain:
     """Tests for CLI main entry point."""
 
-    @patch("sys.argv", ["gebrauchtwaffen"])
+    @patch("sys.argv", ["yoga-helper"])
     def test_main_no_command_shows_help(self, capsys):
         """Test that main with no command shows help."""
         result = main()
         assert result == 0
 
-    @patch("sys.argv", ["gebrauchtwaffen", "crawl"])
+    @patch("sys.argv", ["yoga-helper", "crawl"])
     @patch("backend.cli.cmd_crawl")
     def test_main_crawl_command(self, mock_cmd_crawl):
         """Test that main routes to crawl command."""

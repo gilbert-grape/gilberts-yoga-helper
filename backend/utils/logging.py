@@ -9,7 +9,7 @@ This module configures application-wide logging with:
 For systemd/journald integration:
 - Set USE_JOURNALD=true in environment
 - Logs to stdout will be captured by journald
-- View with: journalctl -u gebrauchtwaffen -f
+- View with: journalctl -u yoga-helper -f
 """
 import logging
 import os

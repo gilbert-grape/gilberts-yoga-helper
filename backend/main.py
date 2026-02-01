@@ -1,5 +1,5 @@
 """
-Gebrauchtwaffen Aggregator - Main FastAPI Application
+Gilbert's Yoga Helper - Main FastAPI Application
 
 Database Migrations:
     This application uses Alembic for database migrations.
@@ -190,7 +190,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Gebrauchtwaffen Aggregator",
+    title="Gilbert's Yoga Helper",
     description="Swiss used firearms marketplace aggregator",
     version="0.1.0",
     lifespan=lifespan,

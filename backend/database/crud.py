@@ -1,5 +1,5 @@
 """
-Database CRUD Operations for Gebrauchtwaffen Aggregator.
+Database CRUD Operations for Gilbert's Yoga Helper.
 
 Provides functions for:
 - Source management (get, create)

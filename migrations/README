@@ -1,6 +1,6 @@
 Generic single-database configuration for Alembic migrations.
 
-Gebrauchtwaffen Aggregator uses SQLite with WAL mode.
+Gilbert's Yoga Helper uses SQLite with WAL mode.
 
 Usage:
     # Generate a new migration after model changes

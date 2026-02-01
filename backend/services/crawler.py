@@ -1,5 +1,5 @@
 """
-Crawler Orchestrator for Gebrauchtwaffen Aggregator.
+Crawler Orchestrator for Gilbert's Yoga Helper.
 
 Coordinates scraping all active sources, matching results against
 search terms, and saving matches to the database.
