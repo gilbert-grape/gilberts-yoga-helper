@@ -3,19 +3,19 @@
 {% block content %}
 {# Filter bar - compact for mobile #}
 <div class="mb-4">
-    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-        {# Time Filter Dropdown #}
-        <select id="time-filter" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
+    <div class="flex items-center gap-1.5 sm:gap-3 overflow-x-auto">
+        {# Time Filter Dropdown - compact on mobile #}
+        <select id="time-filter" class="px-2 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 flex-shrink-0">
             <option value="all" {% if time_filter == 'all' %}selected{% endif %}>Alle</option>
-            <option value="1d" {% if time_filter == '1d' %}selected{% endif %}>1 Tag</option>
-            <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>7 Tage</option>
-            <option value="1m" {% if time_filter == '1m' %}selected{% endif %}>1 Monat</option>
-            <option value="3m" {% if time_filter == '3m' %}selected{% endif %}>3 Monate</option>
+            <option value="1d" {% if time_filter == '1d' %}selected{% endif %}>1T</option>
+            <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>7T</option>
+            <option value="1m" {% if time_filter == '1m' %}selected{% endif %}>1M</option>
+            <option value="3m" {% if time_filter == '3m' %}selected{% endif %}>3M</option>
         </select>
 
         {# Sources Filter Dropdown #}
-        <div class="relative">
-            <button id="sources-dropdown-btn" type="button" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
+        <div class="relative flex-shrink-0">
+            <button id="sources-dropdown-btn" type="button" class="inline-flex items-center px-2 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300">
                 <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
@@ -54,24 +54,24 @@
             </div>
         </div>
 
-        {# Mobile: Icon-only toggle buttons #}
-        <button id="compact-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors" title="Kompakt">
-            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {# Mobile: Icon-only toggle buttons - compact #}
+        <button id="compact-btn-mobile" type="button" class="sm:hidden p-1 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors flex-shrink-0" title="Kompakt">
+            <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
         </button>
-        <button id="expanded-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors" title="Alle öffnen">
-            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="expanded-btn-mobile" type="button" class="sm:hidden p-1 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors flex-shrink-0" title="Alle öffnen">
+            <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
         </button>
-        <button id="filter-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors {% if filter_enabled %}bg-blue-100 border-blue-300{% endif %}" title="Duplikate filtern">
-            <svg class="w-5 h-5 {% if filter_enabled %}text-blue-600{% else %}text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="filter-btn-mobile" type="button" class="sm:hidden p-1 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors flex-shrink-0 {% if filter_enabled %}bg-blue-100 border-blue-300{% endif %}" title="Duplikate filtern">
+            <svg class="w-4 h-4 {% if filter_enabled %}text-blue-600{% else %}text-gray-500{% endif %}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
         </button>
-        <button id="favorites-btn-mobile" type="button" class="sm:hidden p-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors {% if favorites_only %}bg-yellow-100 border-yellow-400{% endif %}" title="Nur Favoriten">
-            <svg class="w-5 h-5 {% if favorites_only %}text-yellow-500{% else %}text-gray-500{% endif %}" fill="{% if favorites_only %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke="currentColor">
+        <button id="favorites-btn-mobile" type="button" class="sm:hidden p-1 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors flex-shrink-0 {% if favorites_only %}bg-yellow-100 border-yellow-400{% endif %}" title="Nur Favoriten">
+            <svg class="w-4 h-4 {% if favorites_only %}text-yellow-500{% else %}text-gray-500{% endif %}" fill="{% if favorites_only %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
         </button>
@@ -242,16 +242,28 @@
     const compactBtnMobile = document.getElementById('compact-btn-mobile');
     const isCompact = getCookie('compact_mode') !== 'false'; // Default to true
 
+    function updateMobileButtonState(btn, enabled, activeClasses = ['bg-blue-100', 'border-blue-300'], iconActiveClass = 'text-blue-600', iconInactiveClass = 'text-gray-500') {
+        const svg = btn.querySelector('svg');
+        if (enabled) {
+            btn.classList.add(...activeClasses);
+            btn.classList.remove('border-gray-300');
+            svg.classList.remove(iconInactiveClass);
+            svg.classList.add(iconActiveClass);
+        } else {
+            btn.classList.remove(...activeClasses);
+            btn.classList.add('border-gray-300');
+            svg.classList.remove(iconActiveClass);
+            svg.classList.add(iconInactiveClass);
+        }
+    }
+
     function setCompactMode(enabled) {
         if (enabled) {
             document.body.classList.add('compact-mode');
-            compactBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
-            compactBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
         } else {
             document.body.classList.remove('compact-mode');
-            compactBtnMobile.classList.remove('bg-blue-100', 'border-blue-300');
-            compactBtnMobile.querySelector('svg').classList.replace('text-blue-600', 'text-gray-500');
         }
+        updateMobileButtonState(compactBtnMobile, enabled);
         if (compactCheckbox) compactCheckbox.checked = enabled;
         setCookie('compact_mode', enabled ? 'true' : 'false', 365);
     }
@@ -260,8 +272,7 @@
     if (isCompact) {
         document.body.classList.add('compact-mode');
         if (compactCheckbox) compactCheckbox.checked = true;
-        compactBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
-        compactBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
+        updateMobileButtonState(compactBtnMobile, true);
     }
 
     if (compactCheckbox) {
@@ -300,13 +311,7 @@
 
     function setExpandedMode(enabled) {
         setAllAccordions(enabled);
-        if (enabled) {
-            expandedBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
-            expandedBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
-        } else {
-            expandedBtnMobile.classList.remove('bg-blue-100', 'border-blue-300');
-            expandedBtnMobile.querySelector('svg').classList.replace('text-blue-600', 'text-gray-500');
-        }
+        updateMobileButtonState(expandedBtnMobile, enabled);
         if (expandedCheckbox) expandedCheckbox.checked = enabled;
         setCookie('expanded_mode', enabled ? 'true' : 'false', 365);
     }
@@ -314,8 +319,7 @@
     // Initialize expanded mode
     if (isExpanded) {
         if (expandedCheckbox) expandedCheckbox.checked = true;
-        expandedBtnMobile.classList.add('bg-blue-100', 'border-blue-300');
-        expandedBtnMobile.querySelector('svg').classList.replace('text-gray-500', 'text-blue-600');
+        updateMobileButtonState(expandedBtnMobile, true);
         setAllAccordions(true);
     }
 
