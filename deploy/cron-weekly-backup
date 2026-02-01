@@ -1,9 +1,9 @@
-# Weekly database backup for Gilbert's Gun Crawler
+# Weekly database backup for Gilbert's Yoga Helper
 # Runs every Sunday at 02:00
-# Install: sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-gun-crawler-backup
+# Install: sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-yoga-helper-backup
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Run backup at 02:00 every Sunday
-0 2 * * 0 pi /home/pi/gilberts-gun-crawler/deploy/backup-database.sh >> /var/log/gilberts-gun-crawler-backup.log 2>&1
+0 2 * * 0 pi /home/pi/gilberts-yoga-helper/deploy/backup-database.sh >> /var/log/gilberts-yoga-helper-backup.log 2>&1

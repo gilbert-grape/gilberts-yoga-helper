@@ -1,6 +1,6 @@
-# Deployment Guide - Gebrauchtwaffen Aggregator
+# Deployment Guide - Gilbert's Yoga Helper
 
-This guide covers deploying the Gebrauchtwaffen Aggregator on a Raspberry Pi for 24/7 operation.
+This guide covers deploying Gilbert's Yoga Helper on a Raspberry Pi for 24/7 operation.
 
 ## Prerequisites
 
@@ -35,8 +35,8 @@ sudo apt install -y libxml2-dev libxslt-dev
 ```bash
 # Clone repository
 cd ~
-git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git gilberts-gun-crawler
-cd gilberts-gun-crawler
+git clone https://github.com/gilbert-grape/gilberts-yoga-helper.git gilberts-yoga-helper
+cd gilberts-yoga-helper
 
 # Create virtual environment
 python3 -m venv .venv
@@ -74,40 +74,40 @@ The systemd service ensures the application:
 
 ```bash
 # Copy service file
-sudo cp deploy/gilberts-gun-crawler.service /etc/systemd/system/
+sudo cp deploy/gilberts-yoga-helper.service /etc/systemd/system/
 
-# Adjust paths if needed (default assumes /home/pi/gilberts-gun-crawler)
-sudo nano /etc/systemd/system/gilberts-gun-crawler.service
+# Adjust paths if needed (default assumes /home/pi/gilberts-yoga-helper)
+sudo nano /etc/systemd/system/gilberts-yoga-helper.service
 
 # Enable and start service
 sudo systemctl daemon-reload
-sudo systemctl enable gilberts-gun-crawler
-sudo systemctl start gilberts-gun-crawler
+sudo systemctl enable gilberts-yoga-helper
+sudo systemctl start gilberts-yoga-helper
 
 # Check status
-sudo systemctl status gilberts-gun-crawler
+sudo systemctl status gilberts-yoga-helper
 ```
 
 #### Service Management Commands
 
 ```bash
 # View status
-sudo systemctl status gilberts-gun-crawler
+sudo systemctl status gilberts-yoga-helper
 
 # Stop service
-sudo systemctl stop gilberts-gun-crawler
+sudo systemctl stop gilberts-yoga-helper
 
 # Start service
-sudo systemctl start gilberts-gun-crawler
+sudo systemctl start gilberts-yoga-helper
 
 # Restart service
-sudo systemctl restart gilberts-gun-crawler
+sudo systemctl restart gilberts-yoga-helper
 
 # View logs
-sudo journalctl -u gilberts-gun-crawler -f
+sudo journalctl -u gilberts-yoga-helper -f
 
 # View last 100 log lines
-sudo journalctl -u gilberts-gun-crawler -n 100
+sudo journalctl -u gilberts-yoga-helper -n 100
 ```
 
 ### 5. Configure Daily Crawl (Cron)
@@ -116,20 +116,20 @@ Set up automatic daily crawling at 06:00:
 
 ```bash
 # Option 1: Use the provided cron file
-sudo cp deploy/cron-daily-crawl /etc/cron.d/gilberts-gun-crawler-crawl
-sudo chmod 644 /etc/cron.d/gilberts-gun-crawler-crawl
+sudo cp deploy/cron-daily-crawl /etc/cron.d/gilberts-yoga-helper-crawl
+sudo chmod 644 /etc/cron.d/gilberts-yoga-helper-crawl
 
 # Option 2: Edit user crontab manually
 crontab -e
 # Add line:
-0 6 * * * cd /home/pi/gilberts-gun-crawler && /home/pi/gilberts-gun-crawler/.venv/bin/python -m backend.cli crawl >> /var/log/gilberts-gun-crawler-crawl.log 2>&1
+0 6 * * * cd /home/pi/gilberts-yoga-helper && /home/pi/gilberts-yoga-helper/.venv/bin/python -m backend.cli crawl >> /var/log/gilberts-yoga-helper-crawl.log 2>&1
 ```
 
 #### Manual Crawl
 
 ```bash
 # Run crawl manually
-cd ~/gilberts-gun-crawler
+cd ~/gilberts-yoga-helper
 source .venv/bin/activate
 python -m backend.cli crawl
 ```
@@ -143,36 +143,36 @@ Weekly backups with 4-backup rotation:
 chmod +x deploy/backup-database.sh
 
 # Option 1: Use provided cron file
-sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-gun-crawler-backup
-sudo chmod 644 /etc/cron.d/gilberts-gun-crawler-backup
+sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-yoga-helper-backup
+sudo chmod 644 /etc/cron.d/gilberts-yoga-helper-backup
 
 # Option 2: Add to root crontab
 sudo crontab -e
 # Add line (runs Sunday 02:00):
-0 2 * * 0 /home/pi/gilberts-gun-crawler/deploy/backup-database.sh >> /var/log/gilberts-gun-crawler-backup.log 2>&1
+0 2 * * 0 /home/pi/gilberts-yoga-helper/deploy/backup-database.sh >> /var/log/gilberts-yoga-helper-backup.log 2>&1
 ```
 
 #### Manual Backup
 
 ```bash
 # Run backup manually
-~/gilberts-gun-crawler/deploy/backup-database.sh
+~/gilberts-yoga-helper/deploy/backup-database.sh
 
 # List backups
-ls -la ~/gilberts-gun-crawler/data/backups/
+ls -la ~/gilberts-yoga-helper/data/backups/
 ```
 
 #### Restore from Backup
 
 ```bash
 # Stop service first
-sudo systemctl stop gilberts-gun-crawler
+sudo systemctl stop gilberts-yoga-helper
 
 # Copy backup to database location
-cp data/backups/gilberts-gun-crawler_20240115_020000.db data/gilberts-gun-crawler.db
+cp data/backups/gilberts-yoga-helper_20240115_020000.db data/gilberts-yoga-helper.db
 
 # Restart service
-sudo systemctl start gilberts-gun-crawler
+sudo systemctl start gilberts-yoga-helper
 ```
 
 ## Configuration
@@ -193,7 +193,7 @@ sudo systemctl start gilberts-gun-crawler
 Edit the systemd service file to change environment variables:
 
 ```bash
-sudo systemctl edit gilberts-gun-crawler
+sudo systemctl edit gilberts-yoga-helper
 ```
 
 Add overrides:
@@ -205,7 +205,7 @@ Environment=LOG_LEVEL=DEBUG
 Then reload:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart gilberts-gun-crawler
+sudo systemctl restart gilberts-yoga-helper
 ```
 
 ## Monitoring
@@ -214,16 +214,16 @@ sudo systemctl restart gilberts-gun-crawler
 
 ```bash
 # Service status
-sudo systemctl status gilberts-gun-crawler
+sudo systemctl status gilberts-yoga-helper
 
 # Recent logs
-sudo journalctl -u gilberts-gun-crawler -n 50
+sudo journalctl -u gilberts-yoga-helper -n 50
 
 # Follow logs in real-time
-sudo journalctl -u gilberts-gun-crawler -f
+sudo journalctl -u gilberts-yoga-helper -f
 
 # Check crawl logs
-tail -f /var/log/gilberts-gun-crawler-crawl.log
+tail -f /var/log/gilberts-yoga-helper-crawl.log
 ```
 
 ### Check Resource Usage
@@ -236,7 +236,7 @@ htop
 df -h
 
 # Database size
-ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
+ls -lh ~/gilberts-yoga-helper/data/gilberts-yoga-helper.db
 ```
 
 ## Troubleshooting
@@ -245,17 +245,17 @@ ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
 
 1. Check logs:
    ```bash
-   sudo journalctl -u gilberts-gun-crawler -n 100 --no-pager
+   sudo journalctl -u gilberts-yoga-helper -n 100 --no-pager
    ```
 
 2. Verify paths in service file:
    ```bash
-   cat /etc/systemd/system/gilberts-gun-crawler.service
+   cat /etc/systemd/system/gilberts-yoga-helper.service
    ```
 
 3. Test manually:
    ```bash
-   cd ~/gilberts-gun-crawler
+   cd ~/gilberts-yoga-helper
    source .venv/bin/activate
    python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
    ```
@@ -264,19 +264,19 @@ ls -lh ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
 
 1. Check database exists:
    ```bash
-   ls -la ~/gilberts-gun-crawler/data/
+   ls -la ~/gilberts-yoga-helper/data/
    ```
 
 2. Run migrations:
    ```bash
-   cd ~/gilberts-gun-crawler
+   cd ~/gilberts-yoga-helper
    source .venv/bin/activate
    python -m alembic upgrade head
    ```
 
 3. Check database integrity:
    ```bash
-   sqlite3 data/gilberts-gun-crawler.db "PRAGMA integrity_check;"
+   sqlite3 data/gilberts-yoga-helper.db "PRAGMA integrity_check;"
    ```
 
 ### Pip Installation Fails
@@ -302,17 +302,17 @@ If `pip install` fails with dependency errors:
 
 1. Check cron is installed:
    ```bash
-   cat /etc/cron.d/gilberts-gun-crawler-crawl
+   cat /etc/cron.d/gilberts-yoga-helper-crawl
    ```
 
 2. Check cron logs:
    ```bash
-   grep gilberts-gun-crawler /var/log/syslog
+   grep gilberts-yoga-helper /var/log/syslog
    ```
 
 3. Test crawl manually:
    ```bash
-   cd ~/gilberts-gun-crawler
+   cd ~/gilberts-yoga-helper
    source .venv/bin/activate
    python -m backend.cli crawl
    ```
@@ -321,15 +321,15 @@ If `pip install` fails with dependency errors:
 
 1. Check ownership:
    ```bash
-   ls -la ~/gilberts-gun-crawler/
-   ls -la ~/gilberts-gun-crawler/data/
+   ls -la ~/gilberts-yoga-helper/
+   ls -la ~/gilberts-yoga-helper/data/
    ```
 
 2. Fix permissions:
    ```bash
-   sudo chown -R pi:pi ~/gilberts-gun-crawler
-   chmod 755 ~/gilberts-gun-crawler/data
-   chmod 644 ~/gilberts-gun-crawler/data/gilberts-gun-crawler.db
+   sudo chown -R pi:pi ~/gilberts-yoga-helper
+   chmod 755 ~/gilberts-yoga-helper/data
+   chmod 644 ~/gilberts-yoga-helper/data/gilberts-yoga-helper.db
    ```
 
 ### Network/Scraper Issues
@@ -341,7 +341,7 @@ If `pip install` fails with dependency errors:
 
 2. Test scraper manually:
    ```bash
-   cd ~/gilberts-gun-crawler
+   cd ~/gilberts-yoga-helper
    source .venv/bin/activate
    python -c "from backend.scrapers import scrape_waffenboerse; import asyncio; print(asyncio.run(scrape_waffenboerse())[:2])"
    ```
@@ -354,10 +354,10 @@ Use the update script for one-command updates:
 
 ```bash
 # First time only: make script executable
-chmod +x ~/gilberts-gun-crawler/deploy/update.sh
+chmod +x ~/gilberts-yoga-helper/deploy/update.sh
 
 # Run update
-~/gilberts-gun-crawler/deploy/update.sh
+~/gilberts-yoga-helper/deploy/update.sh
 ```
 
 The script automatically:
@@ -373,14 +373,14 @@ The script automatically:
 If you prefer manual steps:
 
 ```bash
-sudo systemctl stop gilberts-gun-crawler
-cd ~/gilberts-gun-crawler
+sudo systemctl stop gilberts-yoga-helper
+cd ~/gilberts-yoga-helper
 git pull
-sudo cp deploy/gilberts-gun-crawler.service /etc/systemd/system/
+sudo cp deploy/gilberts-yoga-helper.service /etc/systemd/system/
 sudo systemctl daemon-reload
 source .venv/bin/activate
 python -m alembic upgrade head
-sudo systemctl start gilberts-gun-crawler
+sudo systemctl start gilberts-yoga-helper
 ```
 
 ## Security Notes
@@ -495,10 +495,10 @@ sudo ufw allow in on tailscale0
 
 | Path | Description |
 |------|-------------|
-| `~/gilberts-gun-crawler/` | Application root |
-| `~/gilberts-gun-crawler/data/app.db` | SQLite database |
-| `~/gilberts-gun-crawler/data/backups/` | Database backups |
-| `~/gilberts-gun-crawler/logs/app.log` | Application logs |
-| `/etc/systemd/system/gilberts-gun-crawler.service` | Systemd service |
-| `/etc/cron.d/gilberts-gun-crawler-crawl` | Daily crawl cron |
-| `/etc/cron.d/gilberts-gun-crawler-backup` | Weekly backup cron |
+| `~/gilberts-yoga-helper/` | Application root |
+| `~/gilberts-yoga-helper/data/app.db` | SQLite database |
+| `~/gilberts-yoga-helper/data/backups/` | Database backups |
+| `~/gilberts-yoga-helper/logs/app.log` | Application logs |
+| `/etc/systemd/system/gilberts-yoga-helper.service` | Systemd service |
+| `/etc/cron.d/gilberts-yoga-helper-crawl` | Daily crawl cron |
+| `/etc/cron.d/gilberts-yoga-helper-backup` | Weekly backup cron |

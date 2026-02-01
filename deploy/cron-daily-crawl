@@ -1,9 +1,9 @@
-# Daily crawl for Gilbert's Gun Crawler
+# Daily crawl for Gilbert's Yoga Helper
 # Runs every day at 06:00
-# Install: sudo cp deploy/cron-daily-crawl /etc/cron.d/gilberts-gun-crawler-crawl
+# Install: sudo cp deploy/cron-daily-crawl /etc/cron.d/gilberts-yoga-helper-crawl
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Run crawl at 06:00 every day
-0 6 * * * pi cd /home/pi/gilberts-gun-crawler && /home/pi/.local/bin/poetry run python -m backend.cli crawl >> /var/log/gilberts-gun-crawler-crawl.log 2>&1
+0 6 * * * pi cd /home/pi/gilberts-yoga-helper && /home/pi/.local/bin/poetry run python -m backend.cli crawl >> /var/log/gilberts-yoga-helper-crawl.log 2>&1

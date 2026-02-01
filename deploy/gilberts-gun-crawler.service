@@ -1,20 +1,20 @@
 [Unit]
-Description=Gilbert's Gun Crawler - Swiss Firearms Aggregator
+Description=Gilbert's Yoga Helper
 After=network.target
 
 [Service]
 Type=simple
 User=pi
 Group=pi
-WorkingDirectory=/home/pi/gilberts-gun-crawler
-ExecStart=/home/pi/gilberts-gun-crawler/.venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+WorkingDirectory=/home/pi/gilberts-yoga-helper
+ExecStart=/home/pi/gilberts-yoga-helper/.venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=10
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=gilberts-gun-crawler
+SyslogIdentifier=gilberts-yoga-helper
 
 [Install]
 WantedBy=multi-user.target

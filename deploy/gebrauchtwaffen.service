@@ -1,33 +1,33 @@
-# Systemd service file for Gebrauchtwaffen Aggregator
+# Systemd service file for Gilbert's Yoga Helper
 #
 # Installation:
-#   sudo cp deploy/gebrauchtwaffen.service /etc/systemd/system/
+#   sudo cp deploy/yoga-helper.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
-#   sudo systemctl enable gebrauchtwaffen
-#   sudo systemctl start gebrauchtwaffen
+#   sudo systemctl enable yoga-helper
+#   sudo systemctl start yoga-helper
 #
 # Management:
-#   sudo systemctl status gebrauchtwaffen
-#   sudo systemctl stop gebrauchtwaffen
-#   sudo systemctl restart gebrauchtwaffen
-#   sudo journalctl -u gebrauchtwaffen -f
+#   sudo systemctl status yoga-helper
+#   sudo systemctl stop yoga-helper
+#   sudo systemctl restart yoga-helper
+#   sudo journalctl -u yoga-helper -f
 #
 # Configuration:
 #   Adjust User, WorkingDirectory, and ExecStart paths as needed
 
 [Unit]
-Description=Gebrauchtwaffen Aggregator - Swiss Used Firearms Marketplace Monitor
-Documentation=https://github.com/your-repo/gebrauchtwaffen-aggregator
+Description=Gilbert's Yoga Helper - Web Aggregator
+Documentation=https://github.com/your-repo/yoga-helper-aggregator
 After=network.target
 
 [Service]
 Type=simple
 User=pi
 Group=pi
-WorkingDirectory=/home/pi/gebrauchtwaffen_aggregator
+WorkingDirectory=/home/pi/yoga-helper_aggregator
 
 # Application startup
-ExecStart=/home/pi/gebrauchtwaffen_aggregator/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+ExecStart=/home/pi/yoga-helper_aggregator/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 # Restart configuration
 Restart=always
@@ -46,8 +46,8 @@ Environment=USE_JOURNALD=true
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/home/pi/gebrauchtwaffen_aggregator/data
-ReadWritePaths=/home/pi/gebrauchtwaffen_aggregator/logs
+ReadWritePaths=/home/pi/yoga-helper_aggregator/data
+ReadWritePaths=/home/pi/yoga-helper_aggregator/logs
 
 # Resource limits (adjust for Pi)
 MemoryMax=512M

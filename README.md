@@ -1,10 +1,10 @@
-# Gebrauchtwaffen Aggregator Schweiz
+# Gilbert's Yoga Helper
 
-Personal web aggregator for Swiss used firearms marketplaces. Monitors multiple sources and notifies you of new listings matching your search terms.
+Personal web aggregator that monitors multiple sources and notifies you of new listings matching your search terms.
 
 ## Features
 
-- Aggregates listings from multiple Swiss firearms marketplaces
+- Aggregates listings from multiple sources
 - Configurable search terms with exact or partial matching
 - Highlights new matches since last visit
 - Manual and automated (cron) crawling
@@ -46,8 +46,8 @@ Personal web aggregator for Swiss used firearms marketplaces. Monitors multiple 
 
 ```powershell
 # Clone the repository
-git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git
-cd gilberts-gun-crawler
+git clone https://github.com/gilbert-grape/gilberts-yoga-helper.git
+cd gilberts-yoga-helper
 
 # Install dependencies
 poetry install
@@ -61,8 +61,8 @@ mkdir logs
 
 ```bash
 # Clone the repository
-git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git
-cd gilberts-gun-crawler
+git clone https://github.com/gilbert-grape/gilberts-yoga-helper.git
+cd gilberts-yoga-helper
 
 # Install dependencies
 poetry install
@@ -73,7 +73,7 @@ mkdir -p data logs
 
 #### Raspberry Pi
 
-z.B. installieren in `/home/pi/gilberts-gun-crawler` (oder `/opt/` für system-weite Installation)
+z.B. installieren in `/home/pi/gilberts-yoga-helper` (oder `/opt/` für system-weite Installation)
 
 Das Projekt unterstützt **Python 3.7+**, sodass auch ältere Raspberry Pi OS Versionen (Buster, Bullseye) funktionieren.
 
@@ -89,8 +89,8 @@ source ~/.bashrc
 
 # Clone repository
 cd ~
-git clone https://github.com/gilbert-grape/gilberts-gun-crawler.git
-cd gilberts-gun-crawler
+git clone https://github.com/gilbert-grape/gilberts-yoga-helper.git
+cd gilberts-yoga-helper
 
 # Install dependencies (without dev dependencies for production)
 poetry install --no-dev
@@ -193,7 +193,7 @@ Environment variables (can be set in `.env` file):
 | `DEBUG` | false | Enable debug mode |
 | `LOG_LEVEL` | INFO | Log level: DEBUG, INFO, WARNING, ERROR |
 | `LOG_FILE` | logs/app.log | Log file path |
-| `DATABASE_URL` | sqlite:///data/gebrauchtwaffen.db | Database connection |
+| `DATABASE_URL` | sqlite:///data/yoga_helper.db | Database connection |
 
 ## Upgrading
 
@@ -202,13 +202,13 @@ When a new version is released, follow these steps to upgrade:
 ### Quick Upgrade (Raspberry Pi / Linux)
 
 ```bash
-cd ~/gilberts-gun-crawler
+cd ~/gilberts-yoga-helper
 
 # 1. Backup database (recommended)
 cp data/gebrauchtwaffen.db data/gebrauchtwaffen_backup_$(date +%Y%m%d).db
 
 # 2. Stop service (if running as systemd service)
-sudo systemctl stop gilberts-gun-crawler
+sudo systemctl stop gilberts-yoga-helper
 
 # 3. Pull latest code
 git pull
@@ -221,13 +221,13 @@ pip install -r requirements.txt
 python -m alembic upgrade head
 
 # 6. Restart service
-sudo systemctl start gilberts-gun-crawler
+sudo systemctl start gilberts-yoga-helper
 ```
 
 ### Windows / Development
 
 ```powershell
-cd gilberts-gun-crawler
+cd gilberts-yoga-helper
 
 # 1. Pull latest code
 git pull

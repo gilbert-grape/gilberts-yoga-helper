@@ -1,5 +1,5 @@
 #!/bin/bash
-# Database backup script for Gilbert's Gun Crawler
+# Database backup script for Gilbert's Yoga Helper
 # Creates timestamped backups and keeps the last 4 copies
 #
 # Install: chmod +x deploy/backup-database.sh
@@ -8,7 +8,7 @@
 set -e
 
 # Configuration
-APP_DIR="/home/pi/gilberts-gun-crawler"
+APP_DIR="/home/pi/gilberts-yoga-helper"
 DB_FILE="$APP_DIR/data/app.db"
 BACKUP_DIR="$APP_DIR/data/backups"
 MAX_BACKUPS=4

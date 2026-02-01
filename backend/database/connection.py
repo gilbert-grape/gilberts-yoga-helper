@@ -2,7 +2,7 @@
 Database connection configuration for SQLite with WAL mode.
 
 This module sets up the SQLAlchemy engine with:
-- SQLite database in data/gebrauchtwaffen.db
+- SQLite database in data/yoga_helper.db
 - WAL (Write-Ahead Logging) mode for better concurrency
 - check_same_thread=False for FastAPI async compatibility
 """
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Get project root (connection.py is in backend/database/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DATABASE_PATH = PROJECT_ROOT / "data" / "gebrauchtwaffen.db"
+DATABASE_PATH = PROJECT_ROOT / "data" / "yoga_helper.db"
 
 # Ensure data directory exists
 DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)

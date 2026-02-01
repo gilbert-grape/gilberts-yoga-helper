@@ -14,7 +14,7 @@ class Settings:
     # with absolute paths for reliability. Do not add DATABASE_URL here.
 
     # Application
-    APP_NAME: str = "Gebrauchtwaffen Aggregator"
+    APP_NAME: str = "Gilbert's Yoga Helper"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     # Logging settings
@@ -29,7 +29,7 @@ class Settings:
     REQUEST_DELAY_MAX: int = int(os.getenv("REQUEST_DELAY_MAX", "5"))
     USER_AGENT: str = os.getenv(
         "USER_AGENT",
-        "Mozilla/5.0 (compatible; GebrauchtWaffenBot/1.0)"
+        "Mozilla/5.0 (compatible; YogaHelperBot/1.0)"
     )
 
 

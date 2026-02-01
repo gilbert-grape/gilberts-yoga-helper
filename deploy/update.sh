@@ -1,13 +1,13 @@
 #!/bin/bash
-# Update script for Gilbert's Gun Crawler
+# Update script for Gilbert's Yoga Helper
 # Usage: ./deploy/update.sh
 
 set -e  # Exit on error
 
-APP_DIR="/home/pi/gilberts-gun-crawler"
-SERVICE_NAME="gilberts-gun-crawler"
+APP_DIR="/home/pi/gilberts-yoga-helper"
+SERVICE_NAME="gilberts-yoga-helper"
 
-echo "=== Updating Gilbert's Gun Crawler ==="
+echo "=== Updating Gilbert's Yoga Helper ==="
 
 # Stop service
 echo "Stopping service..."
@@ -20,7 +20,7 @@ git pull
 
 # Update service file if changed
 echo "Updating service file..."
-sudo cp $APP_DIR/deploy/gilberts-gun-crawler.service /etc/systemd/system/
+sudo cp $APP_DIR/deploy/gilberts-yoga-helper.service /etc/systemd/system/
 sudo systemctl daemon-reload
 
 # Run migrations (if any)
