@@ -357,6 +357,11 @@
     // Filter mode
     const filterCheckbox = document.getElementById('filter-checkbox');
     const filterBtnMobile = document.getElementById('filter-btn-mobile');
+    const isFilterEnabled = getCookie('filter_mode') !== 'false'; // Default to true
+
+    // Initialize filter button state from cookie
+    updateMobileButtonState(filterBtnMobile, isFilterEnabled);
+    if (filterCheckbox) filterCheckbox.checked = isFilterEnabled;
 
     function setFilterMode(enabled) {
         setCookie('filter_mode', enabled ? 'true' : 'false', 365);
@@ -369,13 +374,22 @@
         });
     }
     filterBtnMobile.addEventListener('click', function() {
-        const isCurrentlyEnabled = this.classList.contains('bg-blue-100');
-        setFilterMode(!isCurrentlyEnabled);
+        setFilterMode(!isFilterEnabled);
     });
 
     // Favorites mode
     const favoritesCheckbox = document.getElementById('favorites-checkbox');
     const favoritesBtnMobile = document.getElementById('favorites-btn-mobile');
+    const isFavoritesEnabled = getCookie('favorites_only') === 'true'; // Default to false
+
+    // Initialize favorites button state from cookie
+    if (favoritesBtnMobile) {
+        updateMobileButtonState(favoritesBtnMobile, isFavoritesEnabled, ['bg-yellow-100', 'border-yellow-400'], 'text-yellow-500', 'text-gray-500');
+        // Also update fill attribute for star icon
+        const favSvg = favoritesBtnMobile.querySelector('svg');
+        favSvg.setAttribute('fill', isFavoritesEnabled ? 'currentColor' : 'none');
+    }
+    if (favoritesCheckbox) favoritesCheckbox.checked = isFavoritesEnabled;
 
     function setFavoritesMode(enabled) {
         setCookie('favorites_only', enabled ? 'true' : 'false', 365);
@@ -389,8 +403,7 @@
     }
     if (favoritesBtnMobile) {
         favoritesBtnMobile.addEventListener('click', function() {
-            const isCurrentlyEnabled = this.classList.contains('bg-yellow-100');
-            setFavoritesMode(!isCurrentlyEnabled);
+            setFavoritesMode(!isFavoritesEnabled);
         });
     }
 
