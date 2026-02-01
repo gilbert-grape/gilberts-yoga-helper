@@ -32,5 +32,11 @@ class Settings:
         "Mozilla/5.0 (compatible; YogaHelperBot/1.0)"
     )
 
+    # Telegram notification settings
+    # Get token from @BotFather on Telegram
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    # Get chat_id by messaging your bot and checking https://api.telegram.org/bot<TOKEN>/getUpdates
+    TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
+
 
 settings = Settings()

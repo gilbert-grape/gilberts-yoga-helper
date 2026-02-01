@@ -867,8 +867,9 @@ def save_match(
 def save_matches(
     session: Session,
     match_results: List[dict],
-    source_map: Dict[str, int]
-) -> Tuple[int, int]:
+    source_map: Dict[str, int],
+    return_new_matches: bool = False
+):
     """
     Bulk save matches to the database with deduplication.
 
@@ -876,12 +877,15 @@ def save_matches(
         session: Database session
         match_results: List of MatchResult dicts from matching.py
         source_map: Mapping of source name to source_id
+        return_new_matches: If True, return list of new matches for notifications
 
     Returns:
-        Tuple of (new_count, duplicate_count)
+        Tuple of (new_count, duplicate_count) or
+        Tuple of (new_count, duplicate_count, new_matches_list) if return_new_matches=True
     """
     new_count = 0
     duplicate_count = 0
+    new_matches_list = []
 
     for match_result in match_results:
         listing = match_result.get("listing", {})
@@ -895,6 +899,13 @@ def save_matches(
         match = save_match(session, match_result, source_id)
         if match:
             new_count += 1
+            if return_new_matches:
+                new_matches_list.append({
+                    "title": match.title,
+                    "price": match.price,
+                    "url": match.url,
+                    "source": source_name,
+                })
         else:
             duplicate_count += 1
 
@@ -903,6 +914,9 @@ def save_matches(
         session.commit()
 
     logger.info(f"Saved {new_count} new matches, skipped {duplicate_count} duplicates")
+
+    if return_new_matches:
+        return new_count, duplicate_count, new_matches_list
     return new_count, duplicate_count
 
 

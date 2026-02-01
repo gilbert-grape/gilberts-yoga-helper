@@ -48,6 +48,7 @@ from backend.scrapers import (
     scrape_waffenzimmi,
 )
 from backend.services.matching import find_matches
+from backend.services.telegram import notify_new_matches, is_telegram_configured
 from backend.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -693,9 +694,12 @@ async def run_crawl_async(
         add_crawl_log(f"→ {len(match_results)} potentielle Treffer gefunden")
 
         # Save matches with deduplication
+        new_matches_for_telegram = []
         if match_results:
             add_crawl_log("Speichere Treffer...")
-            new_count, dup_count = save_matches(session, match_results, source_map)
+            new_count, dup_count, new_matches_for_telegram = save_matches(
+                session, match_results, source_map, return_new_matches=True
+            )
             result.new_matches = new_count
             result.duplicate_matches = dup_count
             add_crawl_log(f"✓ {new_count} neue Treffer, {dup_count} Duplikate übersprungen")
@@ -707,6 +711,20 @@ async def run_crawl_async(
         _crawl_state.last_result = result
 
         _log_crawl_summary(result)
+
+        # Send Telegram notification if configured and there are new matches
+        if is_telegram_configured() and result.new_matches > 0:
+            add_crawl_log("Sende Telegram-Benachrichtigung...")
+            try:
+                await notify_new_matches(
+                    new_matches_for_telegram,
+                    result.new_matches,
+                    int(result.duration_seconds)
+                )
+                add_crawl_log("✓ Telegram-Benachrichtigung gesendet")
+            except Exception as e:
+                logger.error(f"Failed to send Telegram notification: {e}")
+                add_crawl_log(f"✗ Telegram-Fehler: {str(e)[:30]}")
         add_crawl_log(f"Crawl abgeschlossen in {result.duration_seconds:.1f}s")
 
         # Determine final status

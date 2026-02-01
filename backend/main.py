@@ -397,6 +397,189 @@ async def health_check():
     return {"status": "healthy"}
 
 
+# =============================================================================
+# REST API v1 Endpoints
+# =============================================================================
+
+
+@app.get("/api/v1/matches")
+async def api_get_matches(
+    db: Session = Depends(get_db),
+    source_id: Optional[int] = None,
+    search_term_id: Optional[int] = None,
+    favorites_only: bool = False,
+    limit: int = 100,
+    offset: int = 0,
+):
+    """
+    Get all matches with optional filters.
+
+    Query params:
+        source_id: Filter by source ID
+        search_term_id: Filter by search term ID
+        favorites_only: Only return favorites
+        limit: Max results (default 100)
+        offset: Skip first N results
+
+    Returns:
+        JSON list of matches
+    """
+    from sqlalchemy import desc
+    from backend.database.models import Match, Source, SearchTerm
+
+    query = db.query(Match).order_by(desc(Match.created_at))
+
+    if source_id:
+        query = query.filter(Match.source_id == source_id)
+    if search_term_id:
+        query = query.filter(Match.search_term_id == search_term_id)
+    if favorites_only:
+        query = query.filter(Match.is_favorite == True)
+
+    total = query.count()
+    matches = query.offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "matches": [
+            {
+                "id": m.id,
+                "title": m.title,
+                "price": m.price,
+                "url": m.url,
+                "image_url": m.image_url,
+                "is_favorite": m.is_favorite,
+                "is_new": m.is_new,
+                "source_id": m.source_id,
+                "source_name": m.source.name if m.source else None,
+                "search_term_id": m.search_term_id,
+                "search_term": m.search_term.term if m.search_term else None,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in matches
+        ],
+    }
+
+
+@app.get("/api/v1/matches/new")
+async def api_get_new_matches(
+    db: Session = Depends(get_db),
+    limit: int = 50,
+):
+    """
+    Get new matches from the last crawl.
+
+    Returns matches where is_new=True (not yet seen by user).
+
+    Query params:
+        limit: Max results (default 50)
+
+    Returns:
+        JSON list of new matches
+    """
+    from sqlalchemy import desc
+    from backend.database.models import Match
+
+    query = db.query(Match).filter(Match.is_new == True).order_by(desc(Match.created_at))
+    matches = query.limit(limit).all()
+
+    return {
+        "count": len(matches),
+        "matches": [
+            {
+                "id": m.id,
+                "title": m.title,
+                "price": m.price,
+                "url": m.url,
+                "image_url": m.image_url,
+                "source_id": m.source_id,
+                "source_name": m.source.name if m.source else None,
+                "search_term_id": m.search_term_id,
+                "search_term": m.search_term.term if m.search_term else None,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in matches
+        ],
+    }
+
+
+@app.get("/api/v1/sources")
+async def api_get_sources(db: Session = Depends(get_db)):
+    """
+    Get all sources.
+
+    Returns:
+        JSON list of sources with status
+    """
+    sources = get_all_sources(db)
+
+    return {
+        "count": len(sources),
+        "sources": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "base_url": s.base_url,
+                "is_active": s.is_active,
+                "last_crawl_at": s.last_crawl_at.isoformat() if s.last_crawl_at else None,
+                "last_error": s.last_error,
+            }
+            for s in sources
+        ],
+    }
+
+
+@app.get("/api/v1/search-terms")
+async def api_get_search_terms(db: Session = Depends(get_db)):
+    """
+    Get all search terms.
+
+    Returns:
+        JSON list of search terms
+    """
+    terms = get_all_search_terms(db)
+
+    return {
+        "count": len(terms),
+        "search_terms": [
+            {
+                "id": t.id,
+                "term": t.term,
+                "match_type": t.match_type,
+                "is_active": t.is_active,
+                "sort_order": t.sort_order,
+            }
+            for t in terms
+        ],
+    }
+
+
+@app.post("/api/v1/notifications/test")
+async def api_test_notification():
+    """
+    Send a test Telegram notification.
+
+    Returns:
+        JSON with success status
+    """
+    from backend.services.telegram import send_test_notification, is_telegram_configured
+
+    if not is_telegram_configured():
+        return {
+            "success": False,
+            "error": "Telegram not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in environment.",
+        }
+
+    success = await send_test_notification()
+
+    return {
+        "success": success,
+        "message": "Test notification sent" if success else "Failed to send notification",
+    }
+
+
 @app.post("/api/toggle-favorite/{match_id}")
 async def toggle_favorite(match_id: int, db: Session = Depends(get_db)):
     """
