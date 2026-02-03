@@ -45,8 +45,8 @@ def cmd_crawl(args: argparse.Namespace) -> int:
 
     session = SessionLocal()
     try:
-        # Use trigger="cli" to identify CLI-initiated crawls in the lock file
-        result = asyncio.run(run_crawl_async(session, trigger="cli"))
+        # Use trigger="cronjob" for CLI-initiated crawls (typically from cron)
+        result = asyncio.run(run_crawl_async(session, trigger="cronjob"))
 
         # Print summary to stdout (for cron logs)
         print("\n" + "=" * 50)
