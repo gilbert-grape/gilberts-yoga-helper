@@ -24,7 +24,17 @@
 {% endif %}
 
 {% if search_terms and search_terms|length > 0 %}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    {# Mobile Card View #}
+    <div class="md:hidden space-y-3">
+        {% for term in search_terms %}
+            {% set is_first = loop.first %}
+            {% set is_last = loop.last %}
+            {% include "admin/_partials/_search_term_card.html" %}
+        {% endfor %}
+    </div>
+
+    {# Desktop Table View #}
+    <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

@@ -346,11 +346,16 @@ async def dashboard(
         for m in filtered_matches:
             seen_urls.add(m.url)
 
-        # Add is_recent flag to each match (< 7 days old for badge display)
-        seven_days_ago = now - timedelta(days=7)
+        # Add is_recent flag and age_days to each match (< 7 days old for badge display)
         for m in matches:
             created_utc = m.created_at.replace(tzinfo=timezone.utc) if m.created_at else None
-            m.is_recent = created_utc > seven_days_ago if created_utc else False
+            if created_utc:
+                age = (now - created_utc).days
+                setattr(m, 'age_days', max(1, age + 1))  # Today = 1, yesterday = 2, etc.
+                m.is_recent = age < 7
+            else:
+                setattr(m, 'age_days', 0)
+                m.is_recent = False
 
         # Filter by time filter if not "all"
         if recent_cutoff:
@@ -969,7 +974,7 @@ async def move_source_down_route(
 
 
 @app.get("/admin/crawl")
-async def admin_crawl_status(request: Request):
+async def admin_crawl_status(request: Request, db: Session = Depends(get_db)):
     """
     Admin page for crawl control and status.
 
@@ -977,14 +982,17 @@ async def admin_crawl_status(request: Request):
     - Current crawl status (running/idle)
     - Last crawl result (if any)
     - Manual crawl trigger button
+    - Crawl history (Letzte Crawls tab)
     """
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse("admin/crawl_status.html", {"request": request, 
+    crawl_logs = get_crawl_logs(db, limit=50)
+    return templates.TemplateResponse("admin/crawl_status.html", {"request": request,
             "title": "Crawl-Status",
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
             "log_messages": get_crawl_log(),
+            "crawl_logs": crawl_logs,
         }
     )
 
@@ -1008,11 +1016,13 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
             error_msg = f"Ein Crawl läuft bereits ({lock_holder})."
         else:
             error_msg = "Ein Crawl läuft bereits."
+        crawl_logs = get_crawl_logs(db, limit=50)
         return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
                 "is_running": True,
                 "current_source": crawl_state.current_source,
                 "last_result": crawl_state.last_result,
                 "log_messages": get_crawl_log(),
+                "crawl_logs": crawl_logs,
                 "error": error_msg,
             }
         )
@@ -1021,11 +1031,13 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
     active_terms = get_active_search_terms(db)
     if not active_terms:
         crawl_state = get_crawl_state()
-        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
+        crawl_logs = get_crawl_logs(db, limit=50)
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
                 "is_running": False,
                 "current_source": None,
                 "last_result": crawl_state.last_result,
                 "log_messages": get_crawl_log(),
+                "crawl_logs": crawl_logs,
                 "error": "Kein Crawl möglich: Bitte zuerst Suchbegriffe erfassen.",
             }
         )
@@ -1051,11 +1063,13 @@ async def start_crawl(request: Request, db: Session = Depends(get_db)):
 
     # Return immediately with running state
     crawl_state = get_crawl_state()
-    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
+    crawl_logs = get_crawl_logs(db, limit=50)
+    return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
             "log_messages": get_crawl_log(),
+            "crawl_logs": crawl_logs,
         }
     )
 
@@ -1091,18 +1105,20 @@ async def get_crawl_status_partial(request: Request, db: Session = Depends(get_d
 
 
 @app.post("/admin/crawl/cancel")
-async def cancel_crawl(request: Request):
+async def cancel_crawl(request: Request, db: Session = Depends(get_db)):
     """
     Cancel a running crawl via HTMX request.
 
     Returns the updated status partial for HTMX swap.
     """
+    crawl_logs = get_crawl_logs(db, limit=50)
     if not is_crawl_running():
         crawl_state = get_crawl_state()
-        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request, 
+        return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
                 "is_running": False,
                 "current_source": None,
                 "last_result": crawl_state.last_result,
+                "crawl_logs": crawl_logs,
                 "error": "Kein Crawl läuft.",
             }
         )
@@ -1115,6 +1131,7 @@ async def cancel_crawl(request: Request):
             "is_running": crawl_state.is_running,
             "current_source": crawl_state.current_source,
             "last_result": crawl_state.last_result,
+            "crawl_logs": crawl_logs,
             "success": "Abbruch angefordert...",
         }
     )
@@ -1128,6 +1145,7 @@ async def clear_matches_db(request: Request, db: Session = Depends(get_db)):
     This allows a fresh crawl to reload everything.
     Returns the updated status partial for HTMX swap.
     """
+    crawl_logs = get_crawl_logs(db, limit=50)
     if is_crawl_running():
         crawl_state = get_crawl_state()
         return templates.TemplateResponse("admin/_partials/_crawl_status.html", {"request": request,
@@ -1135,6 +1153,7 @@ async def clear_matches_db(request: Request, db: Session = Depends(get_db)):
                 "current_source": crawl_state.current_source,
                 "last_result": crawl_state.last_result,
                 "log_messages": get_crawl_log(),
+                "crawl_logs": crawl_logs,
                 "error": "Kann Datenbank nicht leeren während ein Crawl läuft.",
             }
         )
@@ -1147,6 +1166,7 @@ async def clear_matches_db(request: Request, db: Session = Depends(get_db)):
             "current_source": None,
             "last_result": crawl_state.last_result,
             "log_messages": get_crawl_log(),
+            "crawl_logs": crawl_logs,
             "success": f"Datenbank geleert ({count} Treffer gelöscht).",
         }
     )

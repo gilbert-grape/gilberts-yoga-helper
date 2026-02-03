@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>{% block title %}{{ title }}{% endblock %} - Gilbert's Yoga Helper</title>
 
-    <!-- Favicon -->
+    <!-- Favicon & PWA -->
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.svg">
+    <link rel="manifest" href="/static/manifest.json">
 
     <!-- TailwindCSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,6 +25,11 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-100 min-h-screen">
+    <!-- Offline Indicator -->
+    <div id="offline-banner" class="hidden bg-amber-500 text-white text-center py-1 text-sm">
+        Offline - zeige gespeicherte Daten
+    </div>
+
     <!-- Navigation -->
     <nav class="bg-white border-b border-gray-200">
         <div class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl px-4 py-2.5">
@@ -48,6 +58,31 @@
 
     <!-- Flowbite JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+
+    <!-- Service Worker Registration & Offline Detection -->
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+
+        // Offline/Online detection
+        const offlineBanner = document.getElementById('offline-banner');
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                offlineBanner.classList.add('hidden');
+            } else {
+                offlineBanner.classList.remove('hidden');
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
 
     {% block extra_scripts %}{% endblock %}
 </body>

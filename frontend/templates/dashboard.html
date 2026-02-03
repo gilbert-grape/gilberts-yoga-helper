@@ -216,18 +216,35 @@
     /* Compact meta */
     body.compact-mode .match-card .match-meta {
         font-size: 0.625rem;
-        margin-top: 0.125rem;
+        margin-top: 0;
     }
     body.compact-mode .match-card .match-meta .match-source-badge {
         display: none;
     }
 
-    /* Smaller NEW badge in compact mode */
-    body.compact-mode .match-card .new-badge {
-        padding: 0 0.25rem;
-        font-size: 8px;
-        top: 2px;
-        right: 2px;
+    /* Compact price row */
+    body.compact-mode .match-card .match-price-row {
+        margin-bottom: 0.125rem;
+    }
+
+    /* Hide image-overlay icons in compact mode */
+    body.compact-mode .match-image .new-badge-image,
+    body.compact-mode .match-image .favorite-btn-image,
+    body.compact-mode .match-card .match-image .new-badge-image,
+    body.compact-mode .match-card .match-image .favorite-btn-image {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+
+    /* Show inline icons in compact mode */
+    body.compact-mode .favorite-btn-inline,
+    body.compact-mode .match-content .favorite-btn-inline {
+        display: block !important;
+    }
+    body.compact-mode .new-badge-inline,
+    body.compact-mode .match-meta .new-badge-inline {
+        display: inline-block !important;
     }
 </style>
 <script>

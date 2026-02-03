@@ -53,7 +53,7 @@ class TestDashboardTemplate:
         """Dashboard should have navigation links."""
         response = client.get("/")
         assert "Home" in response.text
-        assert "Suchbegriffe" in response.text
+        assert "Begriffe" in response.text  # Short nav label
         assert "Quellen" in response.text
 
     def test_dashboard_has_proper_title(self, client):

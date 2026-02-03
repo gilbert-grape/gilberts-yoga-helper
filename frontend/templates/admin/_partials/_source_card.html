@@ -1,0 +1,98 @@
+{# Mobile Card View for Source - compact single line layout #}
+<div id="source-card-{{ source.id }}" class="bg-white rounded-lg shadow px-3 py-2.5">
+    {# Main row: Order, Name, Status indicators, Toggle #}
+    <div class="flex items-center gap-2">
+        {# Order buttons #}
+        <div class="flex items-center">
+            <button
+                {% if not is_first|default(false) %}
+                hx-patch="/admin/sources/{{ source.id }}/move-up"
+                hx-target="#sources-list"
+                hx-swap="innerHTML"
+                class="p-1 text-gray-500 hover:text-gray-900"
+                {% else %}
+                disabled
+                class="p-1 text-gray-200 cursor-not-allowed"
+                {% endif %}
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+            </button>
+            <button
+                {% if not is_last|default(false) %}
+                hx-patch="/admin/sources/{{ source.id }}/move-down"
+                hx-target="#sources-list"
+                hx-swap="innerHTML"
+                class="p-1 text-gray-500 hover:text-gray-900"
+                {% else %}
+                disabled
+                class="p-1 text-gray-200 cursor-not-allowed"
+                {% endif %}
+            >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+        </div>
+
+        {# Source name - takes remaining space #}
+        <a href="{{ source.base_url }}" target="_blank" rel="noopener noreferrer"
+           class="flex-1 text-sm font-medium text-blue-600 truncate">
+            {{ source.name }}
+        </a>
+
+        {# Last crawl date (compact) #}
+        {% if source.last_crawl_at %}
+            <span class="text-xs text-gray-400">{{ source.last_crawl_at.strftime('%d.%m.') }}</span>
+        {% endif %}
+
+        {# Status/Error indicator #}
+        {% if source.last_error %}
+            <span class="w-2 h-2 rounded-full bg-red-500" title="Fehler"></span>
+        {% elif source.last_crawl_at %}
+            <span class="w-2 h-2 rounded-full bg-green-500" title="OK"></span>
+        {% endif %}
+
+        {# Active status badge #}
+        <span class="px-2 py-0.5 rounded text-xs font-medium {% if source.is_active %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+            {% if source.is_active %}An{% else %}Aus{% endif %}
+        </span>
+
+        {# Toggle button #}
+        <button
+            hx-patch="/admin/sources/{{ source.id }}/toggle"
+            hx-target="#sources-list"
+            hx-swap="innerHTML"
+            class="p-1.5 rounded {% if source.is_active %}text-gray-400 hover:text-red-600 hover:bg-red-50{% else %}text-green-500 hover:text-green-700 hover:bg-green-50{% endif %}"
+            title="{% if source.is_active %}Deaktivieren{% else %}Aktivieren{% endif %}"
+        >
+            {% if source.is_active %}
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+            {% else %}
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            {% endif %}
+        </button>
+    </div>
+
+    {# Error row (only if error exists) #}
+    {% if source.last_error %}
+    <div class="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+        <span class="flex-1 text-xs text-red-600 truncate" title="{{ source.last_error }}">
+            {{ source.last_error[:60] }}{% if source.last_error|length > 60 %}...{% endif %}
+        </span>
+        <button
+            hx-delete="/admin/sources/{{ source.id }}/error"
+            hx-target="#sources-list"
+            hx-swap="innerHTML"
+            class="text-xs text-red-500 hover:text-red-700 whitespace-nowrap"
+        >
+            Reset
+        </button>
+    </div>
+    {% endif %}
+</div>

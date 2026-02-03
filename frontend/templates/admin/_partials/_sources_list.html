@@ -1,7 +1,18 @@
 {# Sources List Partial - used for HTMX updates #}
 
 {% if sources and sources|length > 0 %}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    {# Mobile Card View #}
+    <div class="md:hidden space-y-2">
+        {% for source in sources %}
+            {% set is_first = loop.first %}
+            {% set is_last = loop.last %}
+            {% set position = loop.index %}
+            {% include "admin/_partials/_source_card.html" %}
+        {% endfor %}
+    </div>
+
+    {# Desktop Table View #}
+    <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
