@@ -206,6 +206,19 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # Templates with absolute path
 templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
+# Custom Jinja2 filter to calculate age in days
+def age_in_days_filter(created_at):
+    """Calculate age in days from created_at timestamp. Returns 1 for today, 2 for yesterday, etc."""
+    if not created_at:
+        return 0
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    created_utc = created_at.replace(tzinfo=timezone.utc) if created_at.tzinfo is None else created_at
+    days = (now - created_utc).days
+    return max(1, days + 1)
+
+templates.env.filters["age_in_days"] = age_in_days_filter
+
 
 def format_duration(seconds: Optional[float]) -> str:
     """
@@ -386,6 +399,7 @@ async def dashboard(
             "favorites_only": favorites_only,
             "all_sources": all_sources,
             "selected_source_ids": selected_source_ids,
+            "now": now,  # Pass current time for age calculation in templates
         },
     )
 

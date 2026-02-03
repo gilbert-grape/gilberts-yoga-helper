@@ -31,7 +31,7 @@
             {# Days Badge - shown for listings < 7 days old (normal mode only) #}
             {% if match.is_recent %}
             <span class="new-badge new-badge-image absolute top-1 right-1 bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded text-[10px]">
-                {{ match.age_days }}T
+                {{ match.created_at|age_in_days }}T
             </span>
             {% endif %}
 
@@ -88,7 +88,7 @@
                 {# Days badge - shown inline in compact mode #}
                 {% if match.is_recent %}
                 <span class="new-badge-inline hidden bg-green-500 text-white font-bold px-1 py-0.5 rounded text-[8px]">
-                    {{ match.age_days }}T
+                    {{ match.created_at|age_in_days }}T
                 </span>
                 {% endif %}
             </div>
