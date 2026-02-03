@@ -6,4 +6,4 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Run crawl at 06:00 every day
-0 6 * * * pi cd /home/pi/gilberts-yoga-helper && /home/pi/.local/bin/poetry run python -m backend.cli crawl >> /var/log/gilberts-yoga-helper-crawl.log 2>&1
+0 6 * * * pi cd /home/pi/gilberts-yoga-helper && /home/pi/gilberts-yoga-helper/.venv/bin/python -m backend.cli crawl >> /home/pi/gilberts-yoga-helper/logs/crawl.log 2>&1

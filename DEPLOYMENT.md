@@ -122,7 +122,7 @@ sudo chmod 644 /etc/cron.d/gilberts-yoga-helper-crawl
 # Option 2: Edit user crontab manually
 crontab -e
 # Add line:
-0 6 * * * cd /home/pi/gilberts-yoga-helper && /home/pi/gilberts-yoga-helper/.venv/bin/python -m backend.cli crawl >> /var/log/gilberts-yoga-helper-crawl.log 2>&1
+0 6 * * * cd /home/pi/gilberts-yoga-helper && /home/pi/gilberts-yoga-helper/.venv/bin/python -m backend.cli crawl >> /home/pi/gilberts-yoga-helper/logs/crawl.log 2>&1
 ```
 
 #### Manual Crawl
@@ -146,10 +146,10 @@ chmod +x deploy/backup-database.sh
 sudo cp deploy/cron-weekly-backup /etc/cron.d/gilberts-yoga-helper-backup
 sudo chmod 644 /etc/cron.d/gilberts-yoga-helper-backup
 
-# Option 2: Add to root crontab
-sudo crontab -e
+# Option 2: Add to user crontab
+crontab -e
 # Add line (runs Sunday 02:00):
-0 2 * * 0 /home/pi/gilberts-yoga-helper/deploy/backup-database.sh >> /var/log/gilberts-yoga-helper-backup.log 2>&1
+0 2 * * 0 /home/pi/gilberts-yoga-helper/deploy/backup-database.sh >> /home/pi/gilberts-yoga-helper/logs/backup.log 2>&1
 ```
 
 #### Manual Backup
@@ -223,7 +223,7 @@ sudo journalctl -u gilberts-yoga-helper -n 50
 sudo journalctl -u gilberts-yoga-helper -f
 
 # Check crawl logs
-tail -f /var/log/gilberts-yoga-helper-crawl.log
+tail -f ~/gilberts-yoga-helper/logs/crawl.log
 ```
 
 ### Check Resource Usage

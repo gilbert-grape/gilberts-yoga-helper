@@ -6,4 +6,4 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Run backup at 02:00 every Sunday
-0 2 * * 0 pi /home/pi/gilberts-yoga-helper/deploy/backup-database.sh >> /var/log/gilberts-yoga-helper-backup.log 2>&1
+0 2 * * 0 pi /home/pi/gilberts-yoga-helper/deploy/backup-database.sh >> /home/pi/gilberts-yoga-helper/logs/backup.log 2>&1
