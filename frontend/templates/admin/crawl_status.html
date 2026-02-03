@@ -13,6 +13,63 @@
     {% include "admin/_partials/_crawl_status.html" %}
 </div>
 
+{# Telegram Test Section #}
+<div class="mt-8 pt-6 border-t border-gray-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-sm font-medium text-gray-700">Telegram-Benachrichtigungen</h3>
+            <p class="text-xs text-gray-500">Teste die Verbindung zu deinem Telegram-Bot</p>
+        </div>
+        <button id="telegram-test-btn" type="button"
+                onclick="testTelegram()"
+                class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Test senden
+        </button>
+    </div>
+    <div id="telegram-result" class="mt-2 text-sm hidden"></div>
+</div>
+
+<script>
+async function testTelegram() {
+    const btn = document.getElementById('telegram-test-btn');
+    const result = document.getElementById('telegram-result');
+
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Sende...';
+
+    try {
+        const response = await fetch('/api/v1/notifications/test', { method: 'POST' });
+        const data = await response.json();
+
+        result.classList.remove('hidden');
+        if (data.success) {
+            result.className = 'mt-2 text-sm text-green-600';
+            result.textContent = '✓ Test-Nachricht erfolgreich gesendet!';
+        } else {
+            result.className = 'mt-2 text-sm text-red-600';
+            result.textContent = '✗ ' + (data.error || 'Fehler beim Senden');
+        }
+    } catch (e) {
+        result.classList.remove('hidden');
+        result.className = 'mt-2 text-sm text-red-600';
+        result.textContent = '✗ Netzwerkfehler: ' + e.message;
+    }
+
+    // Reset button
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>Test senden';
+
+    // Hide result after 5 seconds
+    setTimeout(() => {
+        result.classList.add('hidden');
+    }, 5000);
+}
+</script>
+
 {# Version info #}
 <div class="mt-8 pt-6 border-t border-gray-200 text-center">
     <p class="text-sm text-gray-400 mb-4">Version 1.0.0 &middot; 01.02.2026</p>
